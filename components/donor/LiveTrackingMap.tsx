@@ -106,6 +106,18 @@ export default memo(function LiveTrackingMap({
         // Phase 12: 20m / 8s Throttle
         if (distMoved < MOVEMENT_THRESHOLD_METERS && (now - lastRouteCalcTime.current < ROUTE_THROTTLE_MS)) return;
 
+        // Phase 17 Hardening: Prevent ZERO_RESULTS infinite calculating when perfectly converged
+        const distToPickup = getDistance(origin, pickupPos);
+        if (distToPickup < 50) {
+            setDirectionsResponse(null);
+            if (onTrackingUpdate) {
+                onTrackingUpdate({ distance: "Nearby", duration: "< 1 min", isNearby: true });
+            }
+            lastRouteCalcTime.current = now;
+            lastRoutePos.current = origin;
+            return;
+        }
+
         try {
             // Hardening (Phase 12): Straight line logic implicitly handled by Directions if too close
             const directionsService = new google.maps.DirectionsService();

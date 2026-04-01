@@ -91,15 +91,22 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
 
     const fetchTracking = async () => {
         try {
-            const result = await getRequest(`/api/donations/track?donationId=${donationId}`);
+            const result = await getRequest(`/api/donations/track/${donationId}`);
             if (result.success) {
                 setInfo(result.data);
                 setLastUpdated(new Date());
             } else {
-                setError(result.message);
+                let srvErr = result.message;
+                if (srvErr?.includes("SSL") || srvErr?.includes("tls")) {
+                    srvErr = "Database Connection Blocked. Please allow 0.0.0.0/0 in MongoDB Atlas Network Access.";
+                }
+                setError(srvErr);
             }
         } catch (err: unknown) {
-            const errorMsg = err instanceof Error ? err.message : "Failed to load tracking info";
+            let errorMsg = err instanceof Error ? err.message : "Failed to load tracking info";
+            if (errorMsg.includes("SSL") || errorMsg.includes("tls")) {
+                errorMsg = "Database Connection Blocked. Please allow 0.0.0.0/0 in MongoDB Atlas Network Access.";
+            }
             setError(errorMsg);
         } finally {
             setLoading(false);
