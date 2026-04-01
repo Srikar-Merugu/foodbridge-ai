@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getRequest, postRequest } from "@/lib/apiClient";
 import { cn } from "@/lib/utils";
 import {
@@ -162,14 +162,14 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
                     pickupLon={info.donation?.longitude || 0}
                     ngoName={ngoName}
                     destinationAddress={info.donation?.pickupAddress || info.donation?.city || "Donation Point"}
-                    onTrackingUpdate={(stats) => {
+                    onTrackingUpdate={useCallback((stats: any) => {
                         setTrackingStats(stats);
                         setLastUpdated(new Date());
-                    }}
-                    onStatusChange={(newStatus) => {
-                        setInfo(prev => prev ? ({ ...prev, status: newStatus.toLowerCase() as any }) : null);
+                    }, [])}
+                    onStatusChange={useCallback((newStatus: string) => {
+                        setInfo((prev: any) => prev ? ({ ...prev, status: newStatus.toLowerCase() }) : null);
                         setLastUpdated(new Date());
-                    }}
+                    }, [])}
                     onReconnect={fetchTracking}
                 />
 

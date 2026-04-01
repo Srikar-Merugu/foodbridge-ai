@@ -109,8 +109,8 @@ export default function TrackDonationPage() {
                     currentStatus={currentStatus}
                     ngoName={ngo?.name}
                     destinationAddress={donation.pickupAddress}
-                    onTrackingUpdate={setTrackingStats}
-                    onStatusChange={(s) => setCurrentStatus(s.toLowerCase())}
+                    onTrackingUpdate={useCallback((stats: any) => setTrackingStats(stats), [])}
+                    onStatusChange={useCallback((s: string) => setCurrentStatus(s.toLowerCase()), [])}
                 />
             </div>
 
