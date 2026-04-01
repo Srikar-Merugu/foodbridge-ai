@@ -13,13 +13,14 @@ export const getSocket = () => {
   if (!socketInstance) {
     console.log("[WS-GLOBAL] Initializing persistent tracking link...");
     socketInstance = io(socketUrl, {
-      transports: ["polling", "websocket"], // Standard order: poll first, then upgrade
+      transports: ["websocket", "polling"], // websocket-first avoids SSL upgrade errors in HTTPS
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      timeout: 20000, // 20s initial timeout
+      timeout: 20000,
       autoConnect: true,
+      upgrade: false, // disable upgrade to prevent mid-session SSL handshake conflicts
     });
 
     socketInstance.on("connect", () => {

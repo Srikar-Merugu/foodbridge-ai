@@ -37,25 +37,32 @@ export function useWebSocketLocation({
         if (!donationId || !userId || !enabled) return;
 
         const socket = getSocket();
+        let disconnectTimer: NodeJS.Timeout | null = null;
         
         const handleJoin = () => {
             console.log("[WS-PRODUCTION] NGO Reclaiming Room:", donationId);
-            // Phase 3: Explicit Room Join on (re)connect
             socket.emit("join-room", { donationId });
+            if (disconnectTimer) clearTimeout(disconnectTimer);
             setIsConnected(true);
+        };
+
+        const handleDisconnect = () => {
+            // Grace period: only mark dropped after 4s without reconnect
+            // This prevents false "Signal Dropped" on brief network blips
+            disconnectTimer = setTimeout(() => setIsConnected(false), 4000);
         };
 
         if (socket.connected) handleJoin();
 
         socket.on("connect", handleJoin);
         socket.on("reconnect", handleJoin);
-        socket.on("disconnect", () => setIsConnected(false));
-        socket.on("connect_error", () => setIsConnected(false));
+        socket.on("disconnect", handleDisconnect);
 
         return () => {
+            if (disconnectTimer) clearTimeout(disconnectTimer);
             socket.off("connect", handleJoin);
             socket.off("reconnect", handleJoin);
-            socket.off("disconnect");
+            socket.off("disconnect", handleDisconnect);
         };
     }, [donationId, userId, enabled]);
 
