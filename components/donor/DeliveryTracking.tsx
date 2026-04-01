@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getRequest, postRequest } from "@/lib/apiClient";
+import { getSocket } from "@/lib/socket";
 import { cn } from "@/lib/utils";
 import {
     CheckCircle2,
@@ -26,6 +27,8 @@ const LiveTrackingMap = dynamic(() => import("./LiveTrackingMap"), {
 });
 
 interface TrackingInfo {
+    _id?: string;
+    ngoLocation?: { lat: number; lng: number };
     status: 'accepted' | 'on_the_way' | 'arrived' | 'collected' | 'delivered' | 'completed';
     ngoId: {
         _id: string;
@@ -123,7 +126,9 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
         if (!lastUpdated) return;
         const check = setInterval(() => {
             const diff = Date.now() - lastUpdated.getTime();
-            setIsOffline(diff > 15000);
+            const socket = getSocket();
+            // PHASE 1: Only mark offline if socket is ACTUALLY disconnected AND 15s elapsed
+            setIsOffline(!socket.connected && diff > 15000);
         }, 5000);
         return () => clearInterval(check);
     }, [lastUpdated]);
@@ -179,6 +184,7 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
                     pickupLon={info.donation?.longitude || 0}
                     ngoName={ngoName}
                     destinationAddress={info.donation?.pickupAddress || info.donation?.city || "Donation Point"}
+                    initialNgoLocation={info.ngoLocation ? { lat: info.ngoLocation.lat, lng: info.ngoLocation.lng } : undefined}
                     onTrackingUpdate={handleTrackingUpdate}
                     onStatusChange={handleStatusChange}
                     onReconnect={fetchTracking}

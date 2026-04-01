@@ -112,6 +112,7 @@ export default function TrackDonationPage() {
                     currentStatus={currentStatus}
                     ngoName={ngo?.name}
                     destinationAddress={donation.pickupAddress}
+                    initialNgoLocation={initialData.ngoLocation ? { lat: initialData.ngoLocation.lat, lng: initialData.ngoLocation.lng } : undefined}
                     onTrackingUpdate={handleTrackingUpdate}
                     onStatusChange={handleStatusChange}
                 />

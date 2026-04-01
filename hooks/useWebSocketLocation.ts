@@ -34,22 +34,19 @@ export function useWebSocketLocation({
 
     // ── Single Source of Truth Socket (Phase 1, 3) ───────────────────
     useEffect(() => {
-        if (!donationId || !userId || !enabled) return;
+        if (!donationId || !enabled) return;
 
         const socket = getSocket();
-        let disconnectTimer: NodeJS.Timeout | null = null;
         
         const handleJoin = () => {
             console.log("[WS-PRODUCTION] NGO Reclaiming Room:", donationId);
-            socket.emit("join-room", { donationId });
-            if (disconnectTimer) clearTimeout(disconnectTimer);
+            // PHASE 3: Force Room Join on both connect and reconnect
+            socket.emit("join-room", donationId);
             setIsConnected(true);
         };
 
         const handleDisconnect = () => {
-            // Grace period: only mark dropped after 4s without reconnect
-            // This prevents false "Signal Dropped" on brief network blips
-            disconnectTimer = setTimeout(() => setIsConnected(false), 4000);
+            setIsConnected(false);
         };
 
         if (socket.connected) handleJoin();
@@ -59,43 +56,30 @@ export function useWebSocketLocation({
         socket.on("disconnect", handleDisconnect);
 
         return () => {
-            if (disconnectTimer) clearTimeout(disconnectTimer);
             socket.off("connect", handleJoin);
             socket.off("reconnect", handleJoin);
             socket.off("disconnect", handleDisconnect);
         };
-    }, [donationId, userId, enabled]);
+    }, [donationId, enabled]);
 
-    // ── Location Broadcaster ─────────────────────────────────────────
+    // ── Location Broadcaster (PHASE 2) ──────────────────────────────
     const sendPulse = useCallback((pos: GeolocationPosition) => {
         const now = Date.now();
-        if (now - lastEmitRef.current < THROTTLE_MS) return;
+        // Limit max fire rate to 2 seconds, but NEVER skip based on position distance
+        if (now - lastEmitRef.current < 2000) return;
 
-        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-        
-        // Skip if position hasn't changed meaningfully (save bandwidth/battery)
-        if (lastPosRef.current) {
-            const dLat = Math.abs(lat - lastPosRef.current.lat);
-            const dLng = Math.abs(lng - lastPosRef.current.lng);
-            if (dLat < MOVEMENT_THRESHOLD && dLng < MOVEMENT_THRESHOLD && (now - lastEmitRef.current < 10000)) {
-                return; // Only heartbeat every 10s if static
-            }
-        }
-
+        const { latitude: lat, longitude: lng } = pos.coords;
         lastEmitRef.current = now;
-        lastPosRef.current = { lat, lng };
 
         const socket = getSocket();
         if (socket?.connected && donationId) {
-            const payload = {
+            // Emit strictly the required format
+            socket.emit("tracking:location", {
                 donationId,
                 lat,
                 lng,
-                accuracy,
-                timestamp: now // Production Requirement: uses Date.now()
-            };
-            // Phase 1: Use ONLY tracking:location
-            socket.emit("tracking:location", payload);
+                timestamp: now
+            });
             console.log(`[NGO-LIVE] Status: Streaming Pulse -> ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
         }
     }, [donationId]);
@@ -114,17 +98,14 @@ export function useWebSocketLocation({
         );
         watchIdRef.current = watchId;
 
-        // 2. Heartbeat Fallback (Ensures foreground/background stability)
+        // 2. Heartbeat Fallback (PHASE 2)
         const fallbackId = setInterval(() => {
             navigator.geolocation.getCurrentPosition(
                 (pos) => sendPulse(pos),
-                (err) => {
-                    console.warn("[NGO-GPS] Fallback Pulse Failed:", err.message);
-                    // Phase 3: Retry/Restart logic implicitly handled by interval
-                },
+                (err) => console.warn("[NGO-GPS] Fallback Pulse Failed:", err.message),
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
-        }, 5000); // Check every 5s
+        }, 3000); // 3 seconds always
         fallbackIdRef.current = fallbackId;
 
         return () => {

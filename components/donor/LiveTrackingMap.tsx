@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState, useRef, useCallback, memo, useMemo } from "react";
-import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, OverlayView } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, OverlayView, Polyline } from "@react-google-maps/api";
 import { getSocket } from "@/lib/socket";
 import { Loader2, Target, Crosshair, MapPin, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ interface LiveTrackingMapProps {
     currentStatus?: string;
     ngoName?: string;
     destinationAddress?: string;
+    initialNgoLocation?: { lat: number; lng: number };
     onTrackingUpdate?: (data: { distance: string; duration: string; isNearby: boolean }) => void;
     onStatusChange?: (status: string) => void;
     onReconnect?: () => void;
@@ -46,6 +47,7 @@ export default memo(function LiveTrackingMap({
     currentStatus,
     ngoName: propNgoName,
     destinationAddress,
+    initialNgoLocation,
     onTrackingUpdate,
     onStatusChange,
     onReconnect,
@@ -66,6 +68,7 @@ export default memo(function LiveTrackingMap({
     const [isSignalDropped, setIsSignalDropped] = useState(false);
     const [liveStatus, setLiveStatus] = useState(currentStatus?.toUpperCase() || "ACCEPTED");
     const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
+    const [manualRoute, setManualRoute] = useState<{lat: number, lng: number}[] | null>(null);
     const [shouldFollow, setShouldFollow] = useState(true);
 
     // ── Refs ──
@@ -110,6 +113,7 @@ export default memo(function LiveTrackingMap({
         const distToPickup = getDistance(origin, pickupPos);
         if (distToPickup < 50) {
             setDirectionsResponse(null);
+            setManualRoute([origin, pickupPos]); // Phase 8: Manual straight line bypass
             if (onTrackingUpdate) {
                 onTrackingUpdate({ distance: "Nearby", duration: "< 1 min", isNearby: true });
             }
@@ -127,6 +131,7 @@ export default memo(function LiveTrackingMap({
                 travelMode: google.maps.TravelMode.DRIVING,
             });
             setDirectionsResponse(results);
+            setManualRoute(null);
             lastRouteCalcTime.current = now;
             lastRoutePos.current = origin;
 
@@ -139,7 +144,14 @@ export default memo(function LiveTrackingMap({
                 });
             }
         } catch (error) {
-            console.error("Directions Error:", error);
+            console.error("[MAP] Directions API Failed:", error);
+            // Phase 8: Route Fallback Implementation
+            setDirectionsResponse(null);
+            setManualRoute([origin, pickupPos]);
+            if (onTrackingUpdate) {
+                // Approximate distance fallback since routing failed
+                onTrackingUpdate({ distance: distToPickup > 1000 ? `${(distToPickup/1000).toFixed(1)} km` : `${Math.floor(distToPickup)} m`, duration: "Live", isNearby: distToPickup < 500 });
+            }
         }
     }, [isLoaded, pickupPos, onTrackingUpdate]);
 
@@ -228,15 +240,32 @@ export default memo(function LiveTrackingMap({
         };
     }, [donationId, animateMarker, updateRoute, onStatusChange, onReconnect]);
 
-    // ── Phase 9: Signal Monitor ──
+    // ── Phase 1 & 9: Signal Monitor (User Mandatory Rules) ──
     useEffect(() => {
         const timer = setInterval(() => {
-            if (Date.now() - lastLocationTimestamp.current > SIGNAL_DROP_TIMEOUT) {
+            const socket = getSocket();
+            // ONLY drop if BOTH socket is disconnected AND >15s without pulse
+            if (!socket.connected && Date.now() - lastLocationTimestamp.current > 15000) {
                 setIsSignalDropped(true);
+            } else {
+                setIsSignalDropped(false);
             }
         }, 2000);
         return () => clearInterval(timer);
     }, []);
+
+    // ── Phase 6 Integration: Initial State Bind ──
+    useEffect(() => {
+        if (isLoaded && initialNgoLocation && !ngoPosRef.current) {
+            console.log("[MAP-PRODUCTION] Binding Initial NGO Location Pulse");
+            const pos = { lat: initialNgoLocation.lat, lng: initialNgoLocation.lng };
+            setNgoPos(pos);
+            setInterpolatedPos(pos);
+            ngoPosRef.current = pos;
+            prevPosRef.current = pos;
+            updateRoute(pos);
+        }
+    }, [isLoaded, initialNgoLocation, updateRoute]);
 
     // ── Phase 10: Fallback Polling ──
     useEffect(() => {
@@ -299,19 +328,29 @@ export default memo(function LiveTrackingMap({
                         options={{ disableDefaultUI: true, styles: SILVER_MAP_STYLE }}
                         onLoad={map => { mapRef.current = map; }}
                     >
-                        {directionsResponse && (
+                        {directionsResponse ? (
                             <DirectionsRenderer
                                 directions={directionsResponse}
                                 options={{
                                     suppressMarkers: true,
                                     polylineOptions: { 
-                                        strokeColor: '#4F46E5', 
-                                        strokeWeight: 6, // Phase 12
+                                        strokeColor: '#4F46E5', // Phase 7
+                                        strokeWeight: 6,
                                         strokeOpacity: 0.9 
                                     }
                                 }}
                             />
-                        )}
+                        ) : manualRoute ? (
+                            <Polyline
+                                path={manualRoute}
+                                options={{
+                                    strokeColor: '#4F46E5',
+                                    strokeWeight: 6,
+                                    strokeOpacity: 0.8,
+                                    geodesic: true,
+                                }}
+                            />
+                        ) : null}
 
                         <Marker 
                             position={pickupPos} 
