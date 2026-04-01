@@ -8,7 +8,19 @@ interface Donation {
     _id: string;
     foodType: string;
     quantity: number;
-    status: "pending" | "accepted" | "pickup_in_progress" | "delivered" | "completed" | "flagged";
+    status: 
+        | "pending" 
+        | "pending_request" 
+        | "request_sent" 
+        | "accepted" 
+        | "on_the_way" 
+        | "arrived" 
+        | "collected" 
+        | "pickup_in_progress" 
+        | "delivered" 
+        | "completed" 
+        | "flagged"
+        | "rejected";
     city: string;
     createdAt: string;
     prioritizationRank?: number;
@@ -19,20 +31,32 @@ interface Donation {
 
 const statusStyle: Record<string, string> = {
     pending: "bg-amber-50 text-amber-700 border-amber-100/50",
+    pending_request: "bg-amber-50 text-amber-700 border-amber-100/50",
+    request_sent: "bg-amber-50 text-amber-700 border-amber-100/50",
     accepted: "bg-indigo-50 text-indigo-700 border-indigo-100/50",
+    on_the_way: "bg-blue-50 text-blue-700 border-blue-100/50",
+    arrived: "bg-blue-50 text-blue-700 border-blue-100/50",
+    collected: "bg-purple-50 text-purple-700 border-purple-100/50",
     pickup_in_progress: "bg-blue-50 text-blue-700 border-blue-100/50",
     delivered: "bg-emerald-50 text-emerald-700 border-emerald-100/50",
     completed: "bg-emerald-500 text-white border-emerald-600",
     flagged: "bg-rose-50 text-rose-600 border-rose-100",
+    rejected: "bg-slate-50 text-slate-500 border-slate-100",
 };
 
 const statusLabel: Record<string, string> = {
     pending: "Awaiting",
+    pending_request: "Awaiting",
+    request_sent: "Awaiting",
     accepted: "Matched",
+    on_the_way: "On the Way",
+    arrived: "Arrived",
+    collected: "Collected",
     pickup_in_progress: "In Pickup",
     delivered: "Delivered",
     completed: "Completed",
-    flagged: "Flagged"
+    flagged: "Flagged",
+    rejected: "Rejected"
 };
 
 export const DonationTable = ({ donations }: { donations: Donation[] }) => {
@@ -46,7 +70,22 @@ export const DonationTable = ({ donations }: { donations: Donation[] }) => {
                 (d.foodType || "").toLowerCase().includes(searchLower) ||
                 (d.donorId?.name || "").toLowerCase().includes(searchLower) ||
                 (d.city || "").toLowerCase().includes(searchLower);
-            const matchesStatus = filterStatus === "all" || d.status === filterStatus;
+            
+            let matchesStatus = filterStatus === "all";
+            if (!matchesStatus) {
+                if (filterStatus === "pending") {
+                    matchesStatus = ["pending", "pending_request", "request_sent"].includes(d.status);
+                } else if (filterStatus === "accepted") {
+                    matchesStatus = d.status === "accepted";
+                } else if (filterStatus === "pickup_in_progress") {
+                    matchesStatus = ["on_the_way", "arrived", "pickup_in_progress", "collected"].includes(d.status);
+                } else if (filterStatus === "delivered") {
+                    matchesStatus = d.status === "delivered";
+                } else if (filterStatus === "completed") {
+                    matchesStatus = d.status === "completed";
+                }
+            }
+
             return matchesSearch && matchesStatus;
         })
         .sort((a, b) => (b.prioritizationRank || 0) - (a.prioritizationRank || 0));

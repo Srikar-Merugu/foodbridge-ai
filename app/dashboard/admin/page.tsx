@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getRequest } from "@/lib/apiClient";
+import { getSocket } from "@/lib/socket";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { UserTable } from "@/components/admin/UserTable";
 import { DonationTable } from "@/components/admin/DonationTable";
@@ -57,6 +58,29 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchAll();
+
+    // ── Real-time Operational Sync ──
+    const socket = getSocket();
+    
+    const handleSync = () => {
+      console.log("[ADMIN-SYNC] Operational pulse vertical. Refreshing Ledger...");
+      fetchAll();
+    };
+
+    if (socket.connected) {
+      socket.emit("join-public-feed");
+    }
+
+    socket.on("connect", () => {
+      socket.emit("join-public-feed");
+    });
+
+    socket.on("new-activity", handleSync);
+
+    return () => {
+      socket.off("connect");
+      socket.off("new-activity", handleSync);
+    };
   }, []);
 
   const tabs: { key: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [

@@ -148,6 +148,20 @@ export const DeliveryStatusUpdater = ({
                         description: `A rescue vehicle is on the way for a pickup mission`,
                         id: deliveryId
                     });
+                } else if (next === 'arrived') {
+                    broadcastActivity({
+                        type: "ARRIVED_AT_PICKUP",
+                        title: "NGO Arrived",
+                        description: `Rescue team has arrived at the pickup location`,
+                        id: deliveryId
+                    });
+                } else if (next === 'collected') {
+                    broadcastActivity({
+                        type: "FOOD_COLLECTED",
+                        title: "Food Assets Collected",
+                        description: `Donation items have been secured and are in transit`,
+                        id: deliveryId
+                    });
                 } else if (next === 'completed' || next === 'delivered') {
                     broadcastActivity({
                         type: "DELIVERY_COMPLETED",

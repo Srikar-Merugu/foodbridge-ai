@@ -37,7 +37,7 @@ export interface Donation {
     _id: string;
     foodType: string;
     quantity: any; // Flexible to accommodate string from backend/form and number in UI
-    status: "pending" | "pending_request" | "request_sent" | "accepted" | "on_the_way" | "arrived" | "collected" | "delivered" | "completed" | "flagged";
+    status: "pending" | "pending_request" | "request_sent" | "accepted" | "on_the_way" | "arrived" | "collected" | "pickup_in_progress" | "delivered" | "completed" | "flagged" | "rejected";
     city: string;
     createdAt: string;
     prioritizationRank?: number;
@@ -100,7 +100,7 @@ export interface AnalyticsSummary {
 
 export interface Activity {
     _id: string;
-    type: "NEW_DONATION" | "MISSION_ACCEPTED" | "PICKUP_STARTED" | "DELIVERY_COMPLETED" | "HUNGER_REPORT";
+    type: "NEW_DONATION" | "MISSION_ACCEPTED" | "PICKUP_STARTED" | "ARRIVED_AT_PICKUP" | "FOOD_COLLECTED" | "DELIVERY_COMPLETED" | "HUNGER_REPORT";
     title: string;
     description: string;
     timestamp: string;
