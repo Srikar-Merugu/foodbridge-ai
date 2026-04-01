@@ -9,6 +9,7 @@ import { sendNotification } from '@/services/notificationService';
 import { updateDeliveryLifecycle } from '@/services/donationService';
 import User from '@/models/User';
 import { sendSMS } from '@/lib/sms';
+import { logOperationalActivity } from '@/lib/operationalLogger';
 
 export const POST = asyncHandler(async (req: Request) => {
     const authGate = await authMiddleware(req);
@@ -41,7 +42,27 @@ export const POST = asyncHandler(async (req: Request) => {
         if (profile) {
             profile.trustScore = Math.min(100, (profile.trustScore || 50) + 2);
             await profile.save();
+            
+            // Log Operational Milestone
+            const donation = await Donation.findById(delivery.donationId);
+            await logOperationalActivity({
+                title: 'Mission Complete',
+                description: `Successfully recovered ${donation?.quantity || '0'}kg from ${donation?.city || 'the target zone'}.`,
+                type: 'mission',
+                userId: ngoUserId!,
+                ngoId: ngoUserId!
+            });
         }
+    }
+
+    if (status === 'accepted') {
+        await logOperationalActivity({
+            title: 'New Recovery Mission',
+            description: 'NGO fleet has accepted a new food recovery request.',
+            type: 'mission',
+            userId: ngoUserId!,
+            ngoId: ngoUserId!
+        });
     }
 
     // Side Effect: Notify Donor (already partly handled in service, but let's keep notification here for flexibility)

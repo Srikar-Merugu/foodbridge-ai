@@ -64,7 +64,8 @@ export const GET = asyncHandler(async (req: Request) => {
             mealsServed,
             activeMissions,
             carbonSaved,
-            successRate
+            successRate,
+            totalRecovered: totalKg
         }, 'NGO analytics retrieved');
     }
 

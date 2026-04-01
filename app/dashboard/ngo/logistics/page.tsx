@@ -19,9 +19,13 @@ import {
     MapPin,
     User,
     Phone,
-    Navigation
+    Navigation,
+    Clock
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { getSocket } from "@/lib/socket";
+import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 
 function LogisticsDashboardContent() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,6 +35,8 @@ function LogisticsDashboardContent() {
     const donationId = searchParams?.get("donationId");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [deliveryDetails, setDeliveryDetails] = useState<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [insights, setInsights] = useState<any[]>([]);
 
     useEffect(() => {
         if (deliveryId || donationId) {
@@ -48,16 +54,44 @@ function LogisticsDashboardContent() {
         }
     }, [deliveryId, donationId]);
 
+    const fetchStats = async () => {
+        try {
+            const result = await getRequest("/api/analytics/summary");
+            if (result.success) setStats(result.data);
+            
+            const insightsRes = await getRequest("/api/analytics/insights");
+            if (insightsRes.success) setInsights(insightsRes.data);
+        } catch (err) {
+            console.error("Failed to fetch logistics data", err);
+        }
+    };
+
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const result = await getRequest("/api/analytics/summary");
-                if (result.success) setStats(result.data);
-            } catch (err) {
-                console.error("Failed to fetch logistics stats", err);
-            }
-        };
         fetchStats();
+
+        // ── Real-time Operational Sync ──
+        const socket = getSocket();
+        
+        const handleSync = () => {
+            console.log("[LOGISTICS-SYNC] Operational pulse received. Refreshing Dashboard...");
+            fetchStats();
+        };
+
+        socket.on("connect", () => {
+            socket.emit("join-public-feed");
+        });
+
+        if (socket.connected) {
+            socket.emit("join-public-feed");
+        }
+
+        socket.on("new-activity", handleSync);
+        socket.on("operational-update", handleSync);
+
+        return () => {
+            socket.off("new-activity", handleSync);
+            socket.off("operational-update", handleSync);
+        };
     }, []);
 
     return (
@@ -267,21 +301,24 @@ function LogisticsDashboardContent() {
                             </div>
 
                             <div className="space-y-6">
-                                <HistoryItem
-                                    title="Route Optimized"
-                                    desc="Updated Jalandhar sector routes saving 4km per trip."
-                                    time="2h ago"
-                                />
-                                <HistoryItem
-                                    title="Compliance Secured"
-                                    desc="All temperature logs for today's batches verified."
-                                    time="5h ago"
-                                />
-                                <HistoryItem
-                                    title="New Region Open"
-                                    desc="Expanded operational zone to include Ludhiana North."
-                                    time="Yesterday"
-                                />
+                                {insights.length > 0 ? (
+                                    insights.map((insight) => (
+                                        <HistoryItem
+                                            key={insight._id}
+                                            title={insight.title}
+                                            desc={insight.description}
+                                            time={formatDistanceToNow(new Date(insight.createdAt), { addSuffix: true })}
+                                            type={insight.type}
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="py-10 text-center space-y-3">
+                                        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                                            <Clock className="w-6 h-6" />
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No recent operational pulses</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="pt-4 mt-4 border-t border-slate-200">
@@ -314,11 +351,23 @@ export default function LogisticsDashboard() {
 }
 
 
-const HistoryItem = ({ title, desc, time }: { title: string; desc: string; time: string }) => (
-    <div className="space-y-2 border-l-2 border-slate-200 pl-6 relative">
-        <div className="absolute w-2 h-2 rounded-full bg-slate-400 -left-[5px] top-1.5" />
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{time}</span>
-        <p className="text-sm font-black text-slate-800 leading-none">{title}</p>
-        <p className="text-xs font-bold text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-);
+const HistoryItem = ({ title, desc, time, type }: { title: string; desc: string; time: string; type?: string }) => {
+    const getDotColor = () => {
+        switch (type) {
+            case 'route': return 'bg-blue-400';
+            case 'compliance': return 'bg-emerald-400';
+            case 'milestone': return 'bg-amber-400';
+            case 'mission': return 'bg-indigo-500';
+            default: return 'bg-slate-400';
+        }
+    };
+
+    return (
+        <div className="group space-y-2 border-l-2 border-slate-200 pl-6 relative pb-2 last:pb-0">
+            <div className={cn("absolute w-2 h-2 rounded-full -left-[5px] top-1.5 transition-transform group-hover:scale-150", getDotColor())} />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{time}</span>
+            <p className="text-sm font-black text-slate-800 leading-none group-hover:text-primary transition-colors">{title}</p>
+            <p className="text-xs font-bold text-slate-500 leading-relaxed">{desc}</p>
+        </div>
+    );
+};
