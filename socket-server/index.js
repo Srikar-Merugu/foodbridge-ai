@@ -28,14 +28,17 @@ const io = new Server(server, {
 
 // ── MongoDB Persistence ──
 const MONGODB_URI = process.env.MONGODB_URI;
-if (!MONGODB_URI) {
-    console.error("CRITICAL: MONGODB_URI not found in .env");
-    process.exit(1);
-}
 
-mongoose.connect(MONGODB_URI)
-    .then(() => console.log("✅ Socket Server connected to MongoDB Persistence Layer"))
-    .catch(err => console.error("❌ MongoDB Connection Error:", err));
+if (!MONGODB_URI) {
+    console.warn("⚠️  WARNING: MONGODB_URI not found in .env. Socket server will run without DB persistence.");
+} else {
+    mongoose.connect(MONGODB_URI)
+        .then(() => console.log("✅ Socket Server connected to MongoDB Persistence Layer"))
+        .catch(err => {
+            console.error("❌ MongoDB Connection Error:", err);
+            // In production, we might want to continue even if DB fails, but log it clearly
+        });
+}
 
 // Memory Cache (Instant Join Sync)
 const lastKnownPositions = new Map();
