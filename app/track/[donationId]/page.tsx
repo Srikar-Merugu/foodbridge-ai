@@ -36,7 +36,7 @@ export default function TrackDonationPage() {
     const [loading, setLoading] = useState(true);
     const [initialData, setInitialData] = useState<any>(null);
     const [trackingStats, setTrackingStats] = useState({ distance: "...", duration: "...", isNearby: false });
-    const [currentStatus, setCurrentStatus] = useState<string>("PENDING");
+    const [currentStatus, setCurrentStatus] = useState<string>("accepted");
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
     // ── Phase 5: Initial Sync (API First) ───────────────────────────
@@ -47,7 +47,7 @@ export default function TrackDonationPage() {
                 const res = await getRequest(`/api/donations/track/${donationId}`);
                 if (res.success) {
                     setInitialData(res.data);
-                    setCurrentStatus(res.data.status);
+                    setCurrentStatus((res.data.status || 'accepted').toLowerCase());
                     setLoading(false);
                 } else {
                     console.error("Initial data fetch failed");
@@ -110,7 +110,7 @@ export default function TrackDonationPage() {
                     ngoName={ngo?.name}
                     destinationAddress={donation.pickupAddress}
                     onTrackingUpdate={setTrackingStats}
-                    onStatusChange={setCurrentStatus}
+                    onStatusChange={(s) => setCurrentStatus(s.toLowerCase())}
                 />
             </div>
 

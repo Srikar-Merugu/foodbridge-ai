@@ -149,7 +149,7 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
         { key: 'completed', label: 'Closed', desc: 'Mission complete', icon: <ShieldCheck className="w-4 h-4" /> }
     ];
 
-    const currentIdx = steps.findIndex(s => s.key === info.status);
+    const currentIdx = steps.findIndex(s => s.key === info.status?.toLowerCase());
 
     return (
         <div className="relative h-[calc(100vh-120px)] sm:h-[700px] w-full bg-slate-950 rounded-[2.5rem] overflow-hidden border border-slate-800 shadow-2xl flex flex-col group">
@@ -167,7 +167,7 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
                         setLastUpdated(new Date());
                     }}
                     onStatusChange={(newStatus) => {
-                        setInfo(prev => prev ? ({ ...prev, status: newStatus as any }) : null);
+                        setInfo(prev => prev ? ({ ...prev, status: newStatus.toLowerCase() as any }) : null);
                         setLastUpdated(new Date());
                     }}
                     onReconnect={fetchTracking}
@@ -178,7 +178,7 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
                     <div className="self-start px-4 py-2 bg-slate-900/90 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl flex items-center space-x-3 pointer-events-auto">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="text-[10px] font-black text-white uppercase tracking-widest">
-                            {steps[currentIdx]?.label || info.status.replace('_', ' ')}
+                            {steps[currentIdx]?.label || info.status?.replace(/_/g, ' ')}
                         </span>
                         {isOffline && (
                             <span className="text-[9px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
