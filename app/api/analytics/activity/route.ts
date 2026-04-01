@@ -57,6 +57,14 @@ export const GET = asyncHandler(async () => {
             type = 'PICKUP_STARTED';
             title = 'Pickup Started';
             description = `Vehicle is on the way for ${d.foodType} pickup`;
+        } else if (d.status === 'arrived') {
+            type = 'ARRIVED_AT_PICKUP';
+            title = 'NGO Arrived';
+            description = `NGO is at the pickup location for ${d.foodType}`;
+        } else if (d.status === 'collected') {
+            type = 'FOOD_COLLECTED';
+            title = 'Batch Collected';
+            description = `${d.foodType} has been secured and is in transit`;
         } else if (d.status === 'completed' || d.status === 'delivered') {
             type = 'DELIVERY_COMPLETED';
             title = 'Food Delivered';
