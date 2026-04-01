@@ -2,6 +2,8 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const mongoose = require("mongoose");
+require("dotenv").config();
 
 const app = express();
 app.use(cors());
@@ -18,74 +20,93 @@ const io = new Server(server, {
         origin: "*", 
         methods: ["GET", "POST"]
     },
-    transports: ["polling", "websocket"], // Bridging firewalls/proxies
+    transports: ["polling", "websocket"],
     connectTimeout: 10000,
     pingInterval: 10000, 
-    pingTimeout: 5000,   // Faster disconnection detection
+    pingTimeout: 5000,
 });
 
-// Store last known state in memory (optional, for instant join sync)
+// ── MongoDB Persistence ──
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+    console.error("CRITICAL: MONGODB_URI not found in .env");
+    process.exit(1);
+}
+
+mongoose.connect(MONGODB_URI)
+    .then(() => console.log("✅ Socket Server connected to MongoDB Persistence Layer"))
+    .catch(err => console.error("❌ MongoDB Connection Error:", err));
+
+// Memory Cache (Instant Join Sync)
 const lastKnownPositions = new Map();
 const lastKnownStatuses = new Map();
 
 io.on("connection", (socket) => {
     console.log(`[SOCKET] User connected: ${socket.id} (Transport: ${socket.conn.transport.name})`);
 
-    // --- Legacy Events (Backward Compatibility) ---
+    // --- PHASE 1: Room Join ---
     socket.on("join-room", (donationId) => {
         if (!donationId) return;
         const room = typeof donationId === 'object' ? donationId.donationId : donationId;
         socket.join(room);
         console.log(`[SOCKET] JOIN-ROOM: ${socket.id} -> ${room}`);
         
-        if (lastKnownPositions.has(room)) socket.emit("receive-location", lastKnownPositions.get(room));
-        if (lastKnownStatuses.has(room)) socket.emit("status-updated", { donationId: room, status: lastKnownStatuses.get(room) });
-    });
-
-    socket.on("send-location", (data) => {
-        if (!data.donationId) return;
-        lastKnownPositions.set(data.donationId, data);
-        io.to(data.donationId).emit("receive-location", data);
-    });
-
-    socket.on("status-update", (data) => {
-        if (!data.donationId) return;
-        lastKnownStatuses.set(data.donationId, data.status);
-        io.to(data.donationId).emit("status-updated", data);
-    });
-
-    // --- NEW Tracking Events (Standardized) ---
-    socket.on("tracking:join", (data) => {
-        const donationId = data?.donationId;
-        if (!donationId) return;
-        
-        socket.join(donationId);
-        console.log(`[SOCKET] TRACKING:JOIN: ${socket.id} -> ${donationId}`);
-
-        // Instant Sync on Join/Reconnect
-        if (lastKnownPositions.has(donationId)) {
-            socket.emit("tracking:location", lastKnownPositions.get(donationId));
+        // Sync last known state from memory for zero-latency join
+        if (lastKnownPositions.has(room)) {
+            socket.emit("tracking:location", lastKnownPositions.get(room));
         }
-        if (lastKnownStatuses.has(donationId)) {
+        if (lastKnownStatuses.has(room)) {
             socket.emit("tracking:status", { 
-                donationId, 
-                status: lastKnownStatuses.get(donationId),
+                donationId: room, 
+                status: lastKnownStatuses.get(room),
                 source: "server_sync"
             });
         }
     });
 
-    socket.on("tracking:location", (data) => {
-        if (!data.donationId) return;
-        lastKnownPositions.set(data.donationId, data);
-        io.to(data.donationId).emit("tracking:location", data);
+    // --- PHASE 2: Production Tracking Events ---
+    socket.on("tracking:location", async (data) => {
+        const { donationId, lat, lng } = data;
+        if (!donationId || !lat || !lng) return;
+
+        // 1. Broadcast to donor instantly
+        lastKnownPositions.set(donationId, data);
+        io.to(donationId).emit("tracking:location", data);
+
+        // 2. Persist to Database (Hardening)
+        try {
+            await mongoose.connection.db.collection('donations').updateOne(
+                { _id: new mongoose.Types.ObjectId(donationId) },
+                { 
+                    $set: { 
+                        liveLatitude: lat, 
+                        liveLongitude: lng,
+                        liveLocationUpdatedAt: new Date()
+                    } 
+                }
+            );
+        } catch (err) {
+            console.error(`[DB-ERROR] Failed to persist location for ${donationId}:`, err.message);
+        }
     });
 
-    socket.on("tracking:status", (data) => {
-        if (!data.donationId) return;
-        console.log(`[SOCKET] TRACKING:STATUS: ${data.donationId} -> ${data.status}`);
-        lastKnownStatuses.set(data.donationId, data.status);
-        io.to(data.donationId).emit("tracking:status", data);
+    socket.on("tracking:status", async (data) => {
+        const { donationId, status } = data;
+        if (!donationId || !status) return;
+
+        console.log(`[SOCKET] STATUS_UPDATE: ${donationId} -> ${status}`);
+        lastKnownStatuses.set(donationId, status);
+        io.to(donationId).emit("tracking:status", data);
+
+        // Persist status change (Sync fallback)
+        try {
+            await mongoose.connection.db.collection('donations').updateOne(
+                { _id: new mongoose.Types.ObjectId(donationId) },
+                { $set: { status: status.toLowerCase() } }
+            );
+        } catch (err) {
+            console.error(`[DB-ERROR] Failed to persist status for ${donationId}:`, err.message);
+        }
     });
 
     socket.on("tracking:stop", (data) => {
@@ -95,7 +116,7 @@ io.on("connection", (socket) => {
         }
     });
 
-    // --- Public Feed ---
+    // --- Public Feed (Admin Dashboard Sync) ---
     socket.on("join-public-feed", () => {
         socket.join("public-feed");
     });
@@ -111,6 +132,6 @@ io.on("connection", (socket) => {
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-    console.log(`\n🚀 Socket Server running on port ${PORT}`);
-    console.log(`🔗 Transports: WebSockets + Polling\n`);
+    console.log(`\n🚀 Hardened Socket Server running on port ${PORT}`);
+    console.log(`🔗 Persistence Layer: MongoDB Active\n`);
 });

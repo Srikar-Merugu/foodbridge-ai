@@ -1,202 +1,216 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import { useParams } from "next/navigation";
-import { MapPin, Navigation, WifiOff, Truck, Clock } from "lucide-react";
-import { getRequest } from "@/lib/apiClient";
-import { cn } from "@/lib/utils";
+/**
+ * Tracking Page — Zomato/Blinkit Production Standard
+ * 1. 60vh Mobile Viewport Split
+ * 2. Phase 5: Pre-mount Initial Sync (API First)
+ * 3. Real-time Status & ETA Hubs
+ */
+
+import { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { useSession } from "next-auth/react";
+import { useRouter, useParams } from "next/navigation";
+import { Loader2, ArrowLeft, Phone, MapPin, Clock, ShieldCheck, ChevronUp, Navigation, AlertCircle } from "lucide-react";
+import { getRequest } from "@/lib/apiClient";
+import NGOStatusTimeline from "@/components/donor/NGOStatusTimeline";
+import FeedbackModal from "@/components/donor/FeedbackModal";
 
-import { ErrorBoundary } from "@/components/common/ErrorBoundary";
-
+// Dynamic map for zero-latency load of shell
 const LiveTrackingMap = dynamic(() => import("@/components/donor/LiveTrackingMap"), {
     ssr: false,
     loading: () => (
-        <div className="h-screen w-full bg-slate-900 flex flex-col items-center justify-center space-y-4">
-            <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/50">Initializing Geospatial Engine</p>
+        <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Satellite Data...</p>
         </div>
     )
 });
 
-interface LiveData {
-    liveLatitude: number | null;
-    liveLongitude: number | null;
-    liveLocationUpdatedAt: string | null;
-    ageSeconds: number | null;
-    isLive: boolean;
-    donorName: string;
-    ngoName?: string;
-    pickupAddress?: string;
-}
+export default function TrackDonationPage() {
+    const { donationId } = useParams() as { donationId: string };
+    const { data: session } = useSession();
+    const router = useRouter();
 
-export default function LiveTrackPage() {
-    const params = useParams();
-    const donationId = params?.donationId as string;
-    const [liveData, setLiveData] = useState<LiveData | null>(null);
+    // -- State --
+    const [loading, setLoading] = useState(true);
+    const [initialData, setInitialData] = useState<any>(null);
     const [trackingStats, setTrackingStats] = useState({ distance: "...", duration: "...", isNearby: false });
-    const [currentStatus, setCurrentStatus] = useState<string>("ACCEPTED");
-    const [ready, setReady] = useState(false);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [currentStatus, setCurrentStatus] = useState<string>("PENDING");
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
-    // Step 8: Delay Map Render to prevent hydration/timing crashes
+    // ── Phase 5: Initial Sync (API First) ───────────────────────────
     useEffect(() => {
-        const timer = setTimeout(() => setReady(true), 300);
-        return () => clearTimeout(timer);
-    }, []);
-
-    const fetchLiveLocation = useCallback(async () => {
-        try {
-            const result = await getRequest(`/api/donations/live-location?donationId=${donationId}`);
-            if (result.success) {
-                setLiveData(result.data);
-                if (result.data?.status) setCurrentStatus(result.data.status);
+        const fetchInitialState = async () => {
+            try {
+                // Production Requirement: Use dedicated track API
+                const res = await getRequest(`/api/donations/track/${donationId}`);
+                if (res.success) {
+                    setInitialData(res.data);
+                    setCurrentStatus(res.data.status);
+                    setLoading(false);
+                } else {
+                    console.error("Initial data fetch failed");
+                    setTimeout(fetchInitialState, 3000); // Retry sync
+                }
+            } catch (err) {
+                console.error("Network error during initial sync:", err);
+                setTimeout(fetchInitialState, 3000);
             }
-        } catch {
-            // Silently retry on next poll interval
-        }
+        };
+        fetchInitialState();
     }, [donationId]);
 
-    useEffect(() => {
-        if (!donationId) return;
-        fetchLiveLocation();
-        // Poll every 10 seconds for real-time updates
-        intervalRef.current = setInterval(fetchLiveLocation, 10000);
-        return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-        };
-    }, [donationId, fetchLiveLocation]);
+    if (loading || !initialData) {
+        return (
+            <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 space-y-6">
+                <div className="relative">
+                    <div className="w-24 h-24 rounded-full border-4 border-slate-100 border-t-indigo-600 animate-spin" />
+                    <Navigation className="absolute inset-0 m-auto w-8 h-8 text-indigo-600 animate-pulse" />
+                </div>
+                <div className="text-center space-y-1">
+                    <h2 className="text-base font-black uppercase tracking-tighter text-slate-900">Establishing Secure Link</h2>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phase 5 Initial Data Syncing...</p>
+                </div>
+            </div>
+        );
+    }
 
-    const openGoogleMaps = () => {
-        if (liveData?.liveLatitude && liveData?.liveLongitude) {
-            window.open(
-                `https://www.google.com/maps?q=${liveData.liveLatitude},${liveData.liveLongitude}&z=17`,
-                '_blank'
-            );
-        }
-    };
-
-    const openNavigation = () => {
-        if (liveData?.liveLatitude && liveData?.liveLongitude) {
-            window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${liveData.liveLatitude},${liveData.liveLongitude}`,
-                '_blank'
-            );
-        }
-    };
+    const { donation, ngo } = initialData;
 
     return (
-        <div className="h-screen w-full bg-slate-950 overflow-hidden relative font-sans">
-            {/* ── Header Overlay ─────────────────────────────────────── */}
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-sm px-4">
-                <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-4 shadow-2xl flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                            <Truck className="w-5 h-5 text-emerald-400" />
-                        </div>
-                        <div>
-                            <h1 className="text-sm font-black text-white leading-tight">NGO Live Tracking</h1>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">
-                                {liveData?.donorName || 'Donor'} Destination
-                            </p>
-                        </div>
+        <div className="fixed inset-0 bg-slate-50 flex flex-col md:flex-row overflow-hidden">
+            {/* Header / App Bar */}
+            <div className="absolute top-0 left-0 right-0 z-30 p-4 pointer-events-none">
+                <div className="max-w-5xl mx-auto flex justify-between items-start">
+                    <button 
+                        onClick={() => router.back()}
+                        className="p-3 bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl pointer-events-auto active:scale-95 transition-all border border-white"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    
+                    {/* Top Status Banner (Phase 17) */}
+                    <div className="px-5 py-2.5 bg-slate-900/90 backdrop-blur-xl rounded-full shadow-2xl pointer-events-auto border border-slate-800 flex items-center space-x-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white leading-none">
+                            {currentStatus.replace(/_/g, ' ')}
+                        </span>
                     </div>
                 </div>
             </div>
 
-
-
-            {/* ── Main Map View ───────────────────────────────────────── */}
-            <div className="absolute inset-0 z-0 p-4 sm:p-6 lg:p-8 pt-32 pb-48">
-                <div className="w-full h-full rounded-[2.5rem] overflow-hidden border border-slate-800 shadow-2xl relative ring-1 ring-white/10">
-                    <ErrorBoundary>
-                        {!ready || !donationId ? (
-                            <div className="h-full w-full bg-slate-900 flex flex-col items-center justify-center space-y-4">
-                                <div className="w-12 h-12 border-4 border-slate-800 border-t-indigo-500 rounded-full animate-spin" />
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Connecting to Tracking System...</p>
-                            </div>
-                        ) : (
-                            <div className="w-full h-full"> 
-                                {liveData?.liveLatitude && liveData?.liveLongitude ? (
-                                    <LiveTrackingMap
-                                        donationId={donationId}
-                                        pickupLat={liveData.liveLatitude}
-                                        pickupLon={liveData.liveLongitude}
-                                        currentStatus={currentStatus}
-                                        ngoName={liveData.ngoName}
-                                        destinationAddress={liveData.pickupAddress}
-                                        onTrackingUpdate={(stats) => setTrackingStats(stats)}
-                                        onStatusChange={(newStatus) => setCurrentStatus(newStatus)}
-                                    />
-                                ) : (
-                                    <div className="h-full w-full flex items-center justify-center bg-slate-900">
-                                        <div className="text-center space-y-4">
-                                            <div className="w-16 h-16 rounded-3xl bg-slate-800 flex items-center justify-center mx-auto border border-white/5 animate-pulse">
-                                                <WifiOff className="w-8 h-8 text-slate-600" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-white font-black">No Signal Detected</h3>
-                                                <p className="text-slate-500 text-xs mt-1">Waiting for donor to go live...</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </ErrorBoundary>
-                </div>
+            {/* ── Map Section (60vh on Mobile, Phase 17) ──────────────────── */}
+            <div className="h-[55vh] md:h-screen md:w-3/5 lg:w-2/3 relative z-10 transition-all duration-700">
+                <LiveTrackingMap
+                    donationId={donationId}
+                    pickupLat={donation.latitude}
+                    pickupLon={donation.longitude}
+                    currentStatus={currentStatus}
+                    ngoName={ngo?.name}
+                    destinationAddress={donation.pickupAddress}
+                    onTrackingUpdate={setTrackingStats}
+                    onStatusChange={setCurrentStatus}
+                />
             </div>
 
-            {/* ── Uber-style Bottom Panel ──────────────────────────────── */}
-            {liveData?.liveLatitude && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-sm px-4 animate-in slide-in-from-bottom-8 duration-700">
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_48px_80px_-24px_rgba(0,0,0,0.6)] space-y-6">
-                        {/* Status bar */}
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <div className="flex items-center space-x-2">
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                    </span>
-                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest whitespace-nowrap">
-                                        {currentStatus.replace(/_/g, " ")}
-                                    </p>
-                                </div>
-                                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                                    {trackingStats.duration || "Calculating..."}
-                                </h2>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Distance</p>
-                                <p className="text-lg font-black text-slate-700 whitespace-nowrap">{trackingStats.distance}</p>
+            {/* ── Info Panels (Bottom Hub on Mobile, Phase 17) ──────────────── */}
+            <div className="flex-1 bg-white md:w-2/5 lg:w-1/3 shadow-[0_-25px_60px_-15px_rgba(0,0,0,0.15)] md:shadow-none rounded-t-[3rem] md:rounded-none z-20 flex flex-col overflow-hidden relative border-t border-slate-100 md:border-none transition-transform duration-500">
+                {/* Visual Puller for Mobile */}
+                <div className="w-16 h-1.5 bg-slate-200 rounded-full mx-auto mt-5 mb-2 md:hidden" />
+                
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8 scroll-smooth">
+                    {/* ETA Hub */}
+                    <div className="grid grid-cols-2 gap-5">
+                        <div className="bg-indigo-50/80 backdrop-blur-sm p-5 rounded-[2rem] border border-indigo-100/50 shadow-inner group">
+                            <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1.5 flex items-center">
+                                <Clock className="w-2.5 h-2.5 mr-1.5" /> Arriving in
+                            </p>
+                            <div className="flex items-baseline space-x-1.5">
+                                <span className="text-2xl font-black text-indigo-900 leading-none">{trackingStats.duration.split(' ')[0]}</span>
+                                <span className="text-[10px] font-black text-indigo-900 uppercase tracking-tighter opacity-70">
+                                    {trackingStats.duration.split(' ')[1] || 'min'}
+                                </span>
                             </div>
                         </div>
-
-                        {/* Progress Bar */}
-                        <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex p-1 border border-slate-50">
-                            <div className={cn(
-                                "h-full bg-emerald-500 rounded-full transition-all duration-1000",
-                                trackingStats.isNearby ? "w-[90%]" : "w-[40%]"
-                            )} />
+                        <div className="bg-slate-50/80 backdrop-blur-sm p-5 rounded-[2rem] border border-slate-100 shadow-inner">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center">
+                                <Navigation className="w-2.5 h-2.5 mr-1.5" /> Distant
+                            </p>
+                            <h3 className="text-2xl font-black text-slate-900 leading-none tracking-tight">{trackingStats.distance}</h3>
                         </div>
+                    </div>
 
-
-
-                        {/* Proximity Tip */}
-                        {trackingStats.isNearby && (
-                            <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-center space-x-3 animate-bounce shadow-sm">
-                                <div className="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
-                                    <Clock className="w-4 h-4 text-white" />
-                                </div>
-                                <p className="text-xs font-bold text-amber-700 leading-tight">
-                                    NGO is nearby! Please ensure the food is ready for pickup.
+                    {/* NGO Details */}
+                    <div className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-[2rem] shadow-xl shadow-slate-200/40 group hover:border-indigo-200 transition-colors">
+                        <div className="flex items-center space-x-5">
+                            <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-100">
+                                {ngo?.name?.[0] || 'N'}
+                            </div>
+                            <div>
+                                <h3 className="font-black text-slate-900 text-sm uppercase tracking-tighter leading-none mb-2">{ngo?.name || 'NGO Partner'}</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase flex items-center tracking-widest opacity-80">
+                                    <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-emerald-500" /> Top Rated
                                 </p>
                             </div>
-                        )}
+                        </div>
+                        <a href={`tel:${ngo?.phone}`} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl active:scale-90 transition-all hover:bg-indigo-600 hover:text-white shadow-lg shadow-indigo-50">
+                            <Phone className="w-5 h-5" />
+                        </a>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between border-b border-slate-50 pb-3">
+                            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Mission Progress</h4>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Live Syncing</span>
+                            </div>
+                        </div>
+                        <NGOStatusTimeline currentStatus={currentStatus} />
+                    </div>
+
+                    {/* Donation Info Card */}
+                    <div className="p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100/50 space-y-4">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Mission Target</p>
+                        <div className="flex space-x-4 items-start">
+                            <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-sm">
+                                <MapPin className="w-5 h-5 text-rose-500" />
+                            </div>
+                            <div>
+                                <h4 className="text-[11px] font-black text-slate-900 uppercase mb-1 leading-tight">{donation.foodType}</h4>
+                                <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-tight opacity-70">
+                                    {donation.pickupAddress}, {donation.city}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            )}
+
+                {/* Bottom Action (Phase 17) */}
+                <div className="p-8 bg-white border-t border-slate-50">
+                    <button 
+                        onClick={() => setIsFeedbackOpen(true)}
+                        disabled={currentStatus.toLowerCase() !== 'delivered'}
+                        className="w-full py-5 bg-slate-900 disabled:bg-slate-50 disabled:text-slate-300 text-white rounded-[1.5rem] text-xs font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-200 active:scale-[0.98] transition-all flex items-center justify-center space-x-3"
+                    >
+                        <span>{currentStatus.toLowerCase() === 'delivered' ? 'Rate Mission Experience' : 'Monitoring Active Service'}</span>
+                    </button>
+                    <div className="mt-5 flex items-center justify-center space-x-2">
+                        <AlertCircle className="w-3 h-3 text-slate-300" />
+                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none">
+                            Encryption: Dual-Channel Socket + API
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <FeedbackModal 
+                isOpen={isFeedbackOpen} 
+                onClose={() => setIsFeedbackOpen(false)} 
+                donationId={donationId} 
+            />
         </div>
     );
 }
