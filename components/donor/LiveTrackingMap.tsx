@@ -27,6 +27,7 @@ interface LiveTrackingMapProps {
     destinationAddress?: string;
     onTrackingUpdate?: (data: { distance: string; duration: string; isNearby: boolean }) => void;
     onStatusChange?: (status: string) => void;
+    onReconnect?: () => void;
 }
 
 const mapContainerStyle = { width: "100%", height: "100%" };
@@ -47,6 +48,7 @@ export default memo(function LiveTrackingMap({
     destinationAddress,
     onTrackingUpdate,
     onStatusChange,
+    onReconnect,
 }: LiveTrackingMapProps) {
     const { data: session } = useSession();
 
@@ -196,6 +198,7 @@ export default memo(function LiveTrackingMap({
         const handleConnect = () => {
             socket.emit("join-room", donationId);
             setConnected(true);
+            onReconnect?.();
         };
 
         socket.on("connect", handleConnect);
@@ -211,7 +214,7 @@ export default memo(function LiveTrackingMap({
             socket.off("tracking:status", syncStatus);
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
         };
-    }, [donationId, animateMarker, updateRoute, onStatusChange]);
+    }, [donationId, animateMarker, updateRoute, onStatusChange, onReconnect]);
 
     // ── Phase 9: Signal Monitor ──
     useEffect(() => {

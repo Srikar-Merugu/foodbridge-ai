@@ -16,10 +16,12 @@ import { formatDistanceToNow } from 'date-fns';
 
 
 
-const emojiMap = {
+const emojiMap: Record<Activity['type'], string> = {
     NEW_DONATION: "🍱",
     MISSION_ACCEPTED: "🤝",
     PICKUP_STARTED: "🚚",
+    ARRIVED_AT_PICKUP: "📍",
+    FOOD_COLLECTED: "📦",
     DELIVERY_COMPLETED: "✅",
     HUNGER_REPORT: "📢"
 };
