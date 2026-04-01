@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import "@/models"; // Register all models globally
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
