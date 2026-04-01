@@ -121,6 +121,16 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
         return () => clearInterval(check);
     }, [lastUpdated]);
 
+    const handleTrackingUpdate = useCallback((stats: any) => {
+        setTrackingStats(stats);
+        setLastUpdated(new Date());
+    }, []);
+
+    const handleStatusChange = useCallback((newStatus: string) => {
+        setInfo(prev => prev ? ({ ...prev, status: newStatus.toLowerCase() as any }) : null);
+        setLastUpdated(new Date());
+    }, []);
+
     if (loading) return (
         <div className="flex flex-col items-center justify-center h-[60vh] bg-slate-50 rounded-[2.5rem] border border-slate-100 italic text-slate-400 text-sm">
             <div className="w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center mb-6 animate-bounce">
@@ -162,14 +172,8 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
                     pickupLon={info.donation?.longitude || 0}
                     ngoName={ngoName}
                     destinationAddress={info.donation?.pickupAddress || info.donation?.city || "Donation Point"}
-                    onTrackingUpdate={useCallback((stats: any) => {
-                        setTrackingStats(stats);
-                        setLastUpdated(new Date());
-                    }, [])}
-                    onStatusChange={useCallback((newStatus: string) => {
-                        setInfo((prev: any) => prev ? ({ ...prev, status: newStatus.toLowerCase() }) : null);
-                        setLastUpdated(new Date());
-                    }, [])}
+                    onTrackingUpdate={handleTrackingUpdate}
+                    onStatusChange={handleStatusChange}
                     onReconnect={fetchTracking}
                 />
 

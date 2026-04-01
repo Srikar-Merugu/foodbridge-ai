@@ -39,6 +39,9 @@ export default function TrackDonationPage() {
     const [currentStatus, setCurrentStatus] = useState<string>("accepted");
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
+    const handleTrackingUpdate = useCallback((stats: any) => setTrackingStats(stats), []);
+    const handleStatusChange = useCallback((s: string) => setCurrentStatus(s.toLowerCase()), []);
+
     // ── Phase 5: Initial Sync (API First) ───────────────────────────
     useEffect(() => {
         const fetchInitialState = async () => {
@@ -109,8 +112,8 @@ export default function TrackDonationPage() {
                     currentStatus={currentStatus}
                     ngoName={ngo?.name}
                     destinationAddress={donation.pickupAddress}
-                    onTrackingUpdate={useCallback((stats: any) => setTrackingStats(stats), [])}
-                    onStatusChange={useCallback((s: string) => setCurrentStatus(s.toLowerCase()), [])}
+                    onTrackingUpdate={handleTrackingUpdate}
+                    onStatusChange={handleStatusChange}
                 />
             </div>
 
