@@ -16,6 +16,15 @@ const ChatMessageSchema = new Schema({
     type: String,
     required: true,
   },
+  type: {
+    type: String,
+    enum: ['text', 'voice'],
+    default: 'text',
+  },
+  seen: {
+    type: Boolean,
+    default: false,
+  },
   timestamp: {
     type: Date,
     default: Date.now,
