@@ -120,7 +120,7 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
     }, []);
 
     const handleShare = async () => {
-        const publicUrl = `${window.location.origin}/track/${donationId}`;
+        const publicUrl = `${window.location.origin}/track/share/${donationId}`;
         const shareData = {
             title: 'Track my FoodBridge Delivery',
             text: `NGO ${info?.ngo?.name} is on the way with my food donation!`,
