@@ -111,8 +111,8 @@ export const DeliveryStatusUpdater = ({
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
-    // ── WebSocket location streaming (replaces HTTP polling) ──────────────────
-    const isTrackingActive = status === "on_the_way" || status === "arrived";
+    // ── WebSocket location streaming (Zomato Grade: Track until Drop-off) ──────────────────
+    const isTrackingActive = ["on_the_way", "arrived", "collected", "delivered"].includes(status);
     const { emitStatus, isConnected } = useWebSocketLocation({
         donationId: donationId || null,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
