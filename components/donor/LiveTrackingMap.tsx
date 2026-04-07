@@ -75,9 +75,11 @@ export default memo(function LiveTrackingMap({
     const lastRouteCalcTime = useRef<number>(0);
     const animationFrameRef = useRef<number | null>(null);
 
-    // Config
+    // Config (Senior Grade: 20m movement or 8s time)
     const INTERPOLATION_DURATION = 2500;
-    const ROUT_THROTTLE_MS = 6000;
+    const ROUT_THROTTLE_MS = 8000;
+    const DISTANCE_THRESHOLD_METERS = 20;
+    const lastRoutePos = useRef<{ lat: number, lng: number } | null>(null);
 
     const pickupPos = useMemo(() => ({ lat: pickupLat, lng: pickupLon }), [pickupLat, pickupLon]);
     const finalDestPos = useMemo(() => {
@@ -99,10 +101,15 @@ export default memo(function LiveTrackingMap({
         if (!isLoaded || !origin || !currentTarget) return;
 
         const now = Date.now();
-        if (now - lastRouteCalcTime.current < ROUT_THROTTLE_MS) return;
+        const distMoved = lastRoutePos.current 
+            ? Math.sqrt(Math.pow(origin.lat - lastRoutePos.current.lat, 2) + Math.pow(origin.lng - lastRoutePos.current.lng, 2)) * 111320 // Approx meters
+            : Infinity;
+
+        if (now - lastRouteCalcTime.current < ROUT_THROTTLE_MS && distMoved < DISTANCE_THRESHOLD_METERS) return;
 
         try {
             const directionsService = new google.maps.DirectionsService();
+            lastRoutePos.current = origin;
             const results = await directionsService.route({
                 origin,
                 destination: currentTarget,
@@ -209,11 +216,33 @@ export default memo(function LiveTrackingMap({
         }
     }, [isLoaded, initialNgoLocation, updateRoute]);
 
+    // ── Signal Resilience (Requirement #8) ──
+    const [signalLost, setSignalLost] = useState(false);
+    useEffect(() => {
+        const checkSignal = setInterval(() => {
+            const now = Date.now();
+            if (now - lastLocationTimestamp.current > 10000 && !signalLost) {
+                setSignalLost(true);
+            } else if (now - lastLocationTimestamp.current <= 10000 && signalLost) {
+                setSignalLost(false);
+            }
+        }, 2000);
+        return () => clearInterval(checkSignal);
+    }, [signalLost]);
+
     if (loadError) return <div className="p-4 text-rose-500 font-black uppercase text-[10px]">Maps Synchronization Failed</div>;
     if (!isLoaded) return <div className="h-full w-full bg-slate-900 animate-pulse flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-slate-700">Connecting Satellite Grid...</div>;
 
     return (
         <div className="w-full h-full relative">
+            {/* Signal Awareness HUD */}
+            {signalLost && liveStatus !== 'completed' && (
+                <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[40] bg-rose-600/90 backdrop-blur-xl px-6 py-2.5 rounded-full border border-rose-500 shadow-2xl flex items-center space-x-3 animate-in slide-in-from-top-4 duration-500">
+                    <div className="w-2 h-2 rounded-full bg-white animate-ping" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">NGO Signal Interrupted</span>
+                </div>
+            )}
+
             <GoogleMap
                 mapContainerStyle={mapContainerStyle}
                 zoom={16}

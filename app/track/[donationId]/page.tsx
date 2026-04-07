@@ -11,8 +11,9 @@ import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, ArrowLeft, Phone, MapPin, Clock, ShieldCheck, Navigation, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Phone, MapPin, Clock, ShieldCheck, Navigation, AlertCircle, WifiOff } from "lucide-react";
 import { getRequest } from "@/lib/apiClient";
+import { getSocket } from "@/lib/socket";
 import NGOStatusTimeline from "@/components/donor/NGOStatusTimeline";
 import FeedbackModal from "@/components/donor/FeedbackModal";
 
@@ -43,27 +44,67 @@ export default function TrackDonationPage() {
     const handleTrackingUpdate = useCallback((stats: { distance: string; duration: string; isNearby: boolean }) => setTrackingStats(stats), []);
     const handleStatusChange = useCallback((s: string) => setCurrentStatus(s.toLowerCase()), []);
 
-    // ── Phase 5: Initial Sync (API First) ───────────────────────────
+    const fetchInitialState = useCallback(async () => {
+        try {
+            const res = await getRequest(`/api/donations/track/${donationId}`);
+            if (res.success) {
+                setInitialData(res.data);
+                setCurrentStatus((res.data.status || 'accepted').toLowerCase());
+                setLoading(false);
+                return true;
+            }
+        } catch (err) {
+            console.error("[TRACK-API] Sync Error:", err);
+        }
+        return false;
+    }, [donationId]);
+
+    // ── Senior Orchestration: Dual-Channel Sync (Socket + Polling) ──
     useEffect(() => {
-        const fetchInitialState = async () => {
-            try {
-                // Production Requirement: Use dedicated track API
-                const res = await getRequest(`/api/donations/track/${donationId}`);
-                if (res.success) {
-                    setInitialData(res.data);
-                    setCurrentStatus((res.data.status || 'accepted').toLowerCase());
-                    setLoading(false);
-                } else {
-                    console.error("Initial data fetch failed");
-                    setTimeout(fetchInitialState, 3000); // Retry sync
-                }
-            } catch (err) {
-                console.error("Network error during initial sync:", err);
-                setTimeout(fetchInitialState, 3000);
+        if (!donationId) return;
+
+        // 1. Initial Load
+        fetchInitialState();
+
+        // 2. Socket Management (Requirement #8, #11)
+        const socket = getSocket();
+        let pollInterval: NodeJS.Timeout | null = null;
+
+        const startPolling = () => {
+            if (pollInterval) return;
+            console.log("[SYNC] Socket offline. Activating 10s Polling Fallback...");
+            pollInterval = setInterval(fetchInitialState, 10000);
+        };
+
+        const stopPolling = () => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+                console.log("[SYNC] Socket online. Polling deactivated.");
             }
         };
-        fetchInitialState();
-    }, [donationId]);
+
+        const onReconnect = () => {
+            console.log("[SYNC] Reconnected. Re-syncing state...");
+            socket.emit("join-room", donationId);
+            fetchInitialState(); 
+            stopPolling();
+        };
+
+        socket.on("connect", stopPolling);
+        socket.on("reconnect", onReconnect);
+        socket.on("disconnect", startPolling);
+
+        // Initial check
+        if (!socket.connected) startPolling();
+
+        return () => {
+            socket.off("connect", stopPolling);
+            socket.off("reconnect", onReconnect);
+            socket.off("disconnect", startPolling);
+            if (pollInterval) clearInterval(pollInterval);
+        };
+    }, [donationId, fetchInitialState]);
 
     if (loading || !initialData) {
         return (
