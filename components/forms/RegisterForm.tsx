@@ -31,11 +31,9 @@ import { LocationPicker } from "@/components/shared/LocationPicker";
 
 export const RegisterForm = () => {
   const searchParams = useSearchParams();
-  
-  if (!searchParams) return null;
-
   const router = useRouter();
-  const queryRole = searchParams.get("role");
+
+  const queryRole = searchParams?.get("role");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -72,6 +70,8 @@ export const RegisterForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+
+  if (!searchParams) return null;
 
   useEffect(() => {
     if (queryRole === "ngo" || queryRole === "donor") {

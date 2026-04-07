@@ -42,11 +42,8 @@ function CompleteProfileContent() {
     const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
-    if (!searchParams) return null;
-    
-    const queryRole = searchParams.get("role");
 
-
+    const queryRole = searchParams?.get("role");
 
     const [formData, setFormData] = React.useState({
         name: "",
@@ -69,6 +66,8 @@ function CompleteProfileContent() {
     const [loading, setLoading] = React.useState(false);
     const [isActivated, setIsActivated] = React.useState(false);
     const [error, setError] = React.useState("");
+
+    if (!searchParams) return null;
 
     React.useEffect(() => {
         if (session === undefined) return;

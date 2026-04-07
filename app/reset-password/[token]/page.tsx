@@ -10,10 +10,8 @@ import { useEffect } from "react";
 
 export default function ResetPasswordPage() {
     const params = useParams();
-    if (!params) return null;
-
-    const token = typeof params.token === 'string' ? params.token : (Array.isArray(params.token) ? params.token[0] : "");
     const router = useRouter();
+    
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -24,10 +22,14 @@ export default function ResetPasswordPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+    const token = params && typeof params.token === 'string' 
+        ? params.token 
+        : (params && Array.isArray(params.token) ? params.token[0] : "");
+
     useEffect(() => {
-        if (!token) {
+        if (!params || !token) {
             setTokenValidating(false);
-            setTokenInvalid(true);
+            if (!token) setTokenInvalid(true);
             return;
         }
         

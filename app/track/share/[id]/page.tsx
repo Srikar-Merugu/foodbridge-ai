@@ -30,16 +30,15 @@ const LiveTrackingMap = dynamic(() => import("@/components/donor/LiveTrackingMap
 
 export default function PublicTrackingPage() {
     const params = useParams();
-    const donationId = params?.id as string;
-    
-    if (!params) return null;
-
     const [info, setInfo] = useState<PublicTrackingData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [trackingStats, setTrackingStats] = useState({ distance: "", duration: "", isNearby: false });
 
+    const donationId = params?.id as string;
+
     const fetchPublicTracking = useCallback(async () => {
+        if (!donationId) return;
         try {
             const res = await fetch(`/api/donations/track-public/${donationId}`);
             const result = await res.json();
