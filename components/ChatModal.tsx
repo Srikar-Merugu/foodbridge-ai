@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, MessageCircle, Mic, MicOff, Play, Pause, Check, CheckCheck, Wifi, WifiOff } from "lucide-react";
+import { X, Send, MessageCircle, Mic, MicOff, Play, Pause, Check, CheckCheck, WifiOff } from "lucide-react";
 import { useChatSocket } from "@/hooks/useChatSocket";
 import { cn } from "@/lib/utils";
 

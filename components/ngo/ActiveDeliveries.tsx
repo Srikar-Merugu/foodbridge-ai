@@ -86,6 +86,7 @@ export const ActiveDeliveries = ({ refreshKey = 0, variant = "light" }: { refres
     );
 
     return (
+        <>
         <div className="space-y-4">
             {deliveries.map((delivery) => (
                 <div key={delivery._id} className={cn(
@@ -228,5 +229,17 @@ export const ActiveDeliveries = ({ refreshKey = 0, variant = "light" }: { refres
                 </div>
             ))}
         </div>
+
+        {/* NGO → Donor Chat Modal — rendered outside the list loop */}
+        {activeChat && (
+            <ChatModal
+                isOpen={isChatOpen}
+                onClose={() => { setIsChatOpen(false); setActiveChat(null); }}
+                donationId={activeChat.id}
+                partnerName={activeChat.name}
+                role="ngo"
+            />
+        )}
+        </>
     );
 };
