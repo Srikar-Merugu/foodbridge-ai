@@ -80,7 +80,10 @@ export default memo(function LiveTrackingMap({
     const ROUT_THROTTLE_MS = 6000;
 
     const pickupPos = useMemo(() => ({ lat: pickupLat, lng: pickupLon }), [pickupLat, pickupLon]);
-    const finalDestPos = useMemo(() => destinationLocation || { lat: pickupLat + 0.02, lng: pickupLon + 0.02 }, [destinationLocation, pickupLat, pickupLon]);
+    const finalDestPos = useMemo(() => {
+        if (destinationLocation?.lat && destinationLocation?.lng) return destinationLocation;
+        return { lat: pickupLat + 0.02, lng: pickupLon + 0.02 };
+    }, [destinationLocation, pickupLat, pickupLon]);
 
     // Determine current target based on status
     const currentTarget = useMemo(() => {
@@ -218,7 +221,7 @@ export default memo(function LiveTrackingMap({
                 onLoad={map => { mapRef.current = map; }}
             >
                 {/* 1. ROUTE LINES */}
-                {directionsResponse && (
+                {directionsResponse && directionsResponse.routes?.[0]?.overview_path && (
                     <>
                         {isPickupPhase ? (
                             <Polyline

@@ -106,15 +106,17 @@ export default function TrackDonationPage() {
 
             {/* ── Map Section (60vh on Mobile, Phase 17) ──────────────────── */}
             <div className="h-[55vh] md:h-screen md:w-3/5 lg:w-2/3 relative z-10 transition-all duration-700">
-                <LiveTrackingMap
-                    donationId={donationId}
-                    pickupLat={donation.latitude}
-                    pickupLon={donation.longitude}
-                    currentStatus={currentStatus}
-                    initialNgoLocation={initialData.ngoLocation ? { lat: initialData.ngoLocation.lat, lng: initialData.ngoLocation.lng } : undefined}
-                    onTrackingUpdate={handleTrackingUpdate}
-                    onStatusChange={handleStatusChange}
-                />
+                {donation && (
+                    <LiveTrackingMap
+                        donationId={donationId}
+                        pickupLat={donation.latitude || 0}
+                        pickupLon={donation.longitude || 0}
+                        currentStatus={currentStatus}
+                        initialNgoLocation={initialData.ngoLocation?.lat ? { lat: initialData.ngoLocation.lat, lng: initialData.ngoLocation.lng } : undefined}
+                        onTrackingUpdate={handleTrackingUpdate}
+                        onStatusChange={handleStatusChange}
+                    />
+                )}
             </div>
 
             {/* ── Info Panels (Bottom Hub on Mobile, Phase 17) ──────────────── */}
@@ -130,9 +132,11 @@ export default function TrackDonationPage() {
                                 <Clock className="w-2.5 h-2.5 mr-1.5" /> Arriving in
                             </p>
                             <div className="flex items-baseline space-x-1.5">
-                                <span className="text-2xl font-black text-indigo-900 leading-none">{trackingStats.duration.split(' ')[0]}</span>
+                                <span className="text-2xl font-black text-indigo-900 leading-none">
+                                    {trackingStats.duration?.includes(' ') ? trackingStats.duration.split(' ')[0] : trackingStats.duration || "..."}
+                                </span>
                                 <span className="text-[10px] font-black text-indigo-900 uppercase tracking-tighter opacity-70">
-                                    {trackingStats.duration.split(' ')[1] || 'min'}
+                                    {trackingStats.duration?.includes(' ') ? trackingStats.duration.split(' ')[1] : "min"}
                                 </span>
                             </div>
                         </div>
