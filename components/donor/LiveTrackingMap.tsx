@@ -210,6 +210,7 @@ export default memo(function LiveTrackingMap({
     }, [isLoaded, initialNgoLocation, updateRoute]);
 
     if (loadError) return <div className="p-4 text-rose-500 font-black uppercase text-[10px]">Maps Synchronization Failed</div>;
+    if (!isLoaded) return <div className="h-full w-full bg-slate-900 animate-pulse flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-slate-700">Connecting Satellite Grid...</div>;
 
     return (
         <div className="w-full h-full relative">
@@ -262,7 +263,7 @@ export default memo(function LiveTrackingMap({
                     position={currentTarget} 
                     icon={{ 
                         url: isPickupPhase ? 'https://cdn-icons-png.flaticon.com/512/1673/1673188.png' : 'https://cdn-icons-png.flaticon.com/512/619/619153.png', 
-                        scaledSize: new google.maps.Size(36, 36) 
+                        scaledSize: typeof google !== 'undefined' ? new google.maps.Size(36, 36) : undefined
                     }} 
                 />
 
