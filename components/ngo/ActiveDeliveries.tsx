@@ -26,14 +26,23 @@ interface Delivery {
     status: DeliveryStatus;
 }
 
-import { Activity, Phone, ExternalLink, ChevronDown, ShieldCheck, MapPin, Truck } from "lucide-react";
+import { Activity, Phone, ExternalLink, ChevronDown, ShieldCheck, MapPin, Truck, MessageCircle } from "lucide-react";
 import { DeliveryStatusUpdater } from "./DeliveryStatusUpdater";
+import { ChatModal } from "../ChatModal";
 
 export const ActiveDeliveries = ({ refreshKey = 0, variant = "light" }: { refreshKey?: number, variant?: "light" | "dark" }) => {
     const isDark = variant === "dark";
     const [deliveries, setDeliveries] = useState<Delivery[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [activeChat, setActiveChat] = useState<{ id: string; name: string } | null>(null);
+
+    const handleOpenChat = (e: React.MouseEvent, donationId: string, donorName: string) => {
+        e.stopPropagation();
+        setActiveChat({ id: donationId, name: donorName });
+        setIsChatOpen(true);
+    };
 
     const fetchDeliveries = async () => {
         try {
@@ -181,6 +190,15 @@ export const ActiveDeliveries = ({ refreshKey = 0, variant = "light" }: { refres
                                             </p>
                                         </div>
                                     )}
+
+                                    <Button
+                                        onClick={(e) => handleOpenChat(e, delivery.donationId._id, delivery.donationId.donorId?.name || "Donor")}
+                                        variant="outline"
+                                        className="w-full h-11 border-indigo-200 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all rounded-xl"
+                                    >
+                                        <MessageCircle className="w-4 h-4 mr-2" />
+                                        Message Donor
+                                    </Button>
                                 </div>
                             </div>
 

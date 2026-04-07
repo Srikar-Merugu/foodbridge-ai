@@ -11,11 +11,12 @@ import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, ArrowLeft, Phone, MapPin, Clock, ShieldCheck, Navigation, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Phone, MapPin, Clock, ShieldCheck, Navigation, AlertCircle, MessageCircle } from "lucide-react";
 import { getRequest } from "@/lib/apiClient";
 import { getSocket } from "@/lib/socket";
 import NGOStatusTimeline from "@/components/donor/NGOStatusTimeline";
 import FeedbackModal from "@/components/donor/FeedbackModal";
+import { ChatModal } from "@/components/ChatModal";
 
 // Dynamic map for zero-latency load of shell
 const LiveTrackingMap = dynamic(() => import("@/components/donor/LiveTrackingMap"), {
@@ -39,6 +40,7 @@ export default function TrackDonationPage() {
     const [trackingStats, setTrackingStats] = useState({ distance: "", duration: "", isNearby: false });
     const [currentStatus, setCurrentStatus] = useState<string>("accepted");
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
 
     const donationId = (params?.donationId as string) || "";
 
@@ -203,9 +205,17 @@ export default function TrackDonationPage() {
                                 </p>
                             </div>
                         </div>
-                        <a href={`tel:${ngo?.phone}`} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl active:scale-90 transition-all hover:bg-indigo-600 hover:text-white shadow-lg shadow-indigo-50">
-                            <Phone className="w-5 h-5" />
-                        </a>
+                        <div className="flex items-center space-x-2">
+                            <a href={`tel:${ngo?.phone}`} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl active:scale-90 transition-all hover:bg-indigo-600 hover:text-white shadow-lg shadow-indigo-50">
+                                <Phone className="w-5 h-5" />
+                            </a>
+                            <button 
+                                onClick={() => setIsChatOpen(true)}
+                                className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl active:scale-90 transition-all hover:bg-indigo-600 hover:text-white shadow-lg shadow-indigo-50"
+                            >
+                                <MessageCircle className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Timeline */}
@@ -254,6 +264,14 @@ export default function TrackDonationPage() {
                     </div>
                 </div>
             </div>
+
+            <ChatModal
+                isOpen={isChatOpen}
+                onClose={() => setIsChatOpen(false)}
+                donationId={donationId}
+                partnerName={ngo?.name || "NGO Partner"}
+                role="donor"
+            />
 
             <FeedbackModal 
                 isOpen={isFeedbackOpen} 

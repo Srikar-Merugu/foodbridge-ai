@@ -10,11 +10,11 @@ interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
   donationId: string;
-  ngoName: string;
+  partnerName: string;
   role: 'donor' | 'ngo';
 }
 
-export const ChatModal = ({ isOpen, onClose, donationId, ngoName, role }: ChatModalProps) => {
+export const ChatModal = ({ isOpen, onClose, donationId, partnerName, role }: ChatModalProps) => {
   const [input, setInput] = useState("");
   const { messages, sendMessage, isConnected, messagesEndRef } = useChatSocket(donationId, role);
 
@@ -47,13 +47,13 @@ export const ChatModal = ({ isOpen, onClose, donationId, ngoName, role }: ChatMo
             className="fixed bottom-6 right-6 left-6 md:left-auto md:w-[400px] h-[600px] max-h-[80vh] bg-white rounded-[2.5rem] shadow-2xl z-[101] flex flex-col overflow-hidden border border-slate-100"
           >
             {/* Header */}
-            <div className="bg-slate-900 p-6 flex items-center justify-between">
+            <div className="bg-slate-900 p-6 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-black">
-                  {ngoName.charAt(0).toUpperCase()}
+                  {partnerName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h3 className="text-white font-black text-sm">{ngoName}</h3>
+                  <h3 className="text-white font-black text-sm">{partnerName}</h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <div className={cn("w-1.5 h-1.5 rounded-full", isConnected ? "bg-emerald-400" : "bg-slate-500")} />
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{isConnected ? "Online" : "Connecting..."}</span>
@@ -105,7 +105,7 @@ export const ChatModal = ({ isOpen, onClose, donationId, ngoName, role }: ChatMo
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white border-t border-slate-100">
+            <div className="p-4 bg-white border-t border-slate-100 shrink-0">
                <div className="relative">
                   <input 
                     type="text" 
