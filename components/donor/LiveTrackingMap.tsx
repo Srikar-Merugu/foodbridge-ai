@@ -266,7 +266,7 @@ export default memo(function LiveTrackingMap({
                 onLoad={map => { mapRef.current = map; }}
             >
                 {/* 1. ROUTE LINES (DirectionsRenderer Only) */}
-                {directionsResponse && (
+                {directionsResponse && liveStatus !== 'completed' && (
                     <DirectionsRenderer
                         directions={directionsResponse}
                         options={{
@@ -290,7 +290,7 @@ export default memo(function LiveTrackingMap({
                 />
 
                 {/* 3. PARTNER OVERLAY (THE "GLIDER") */}
-                {interpolatedPos && (
+                {interpolatedPos && liveStatus !== 'completed' && (
                     <OverlayView position={interpolatedPos} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}>
                         <div 
                             style={{ 

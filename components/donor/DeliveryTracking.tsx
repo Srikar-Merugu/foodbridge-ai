@@ -162,11 +162,11 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
         </div>
     );
 
-    const stages = [
         { key: 'accepted', label: 'Preparing', desc: 'NGO assigned & localizing', icon: <Package /> },
         { key: 'on_the_way', label: 'Collecting', desc: 'Heading to your location', icon: <Truck /> },
         { key: 'collected', label: 'On the way', desc: 'Out for final delivery', icon: <Navigation /> },
-        { key: 'delivered', label: 'Delivered', desc: 'Mission accomplished', icon: <CheckCircle2 /> }
+        { key: 'delivered', label: 'Delivered', desc: 'Mission accomplished', icon: <CheckCircle2 /> },
+        { key: 'completed', label: 'Finalized', desc: 'Mission accomplished', icon: <CheckCircle2 /> }
     ];
 
     const currentIdx = stages.findIndex(s => s.key === info.status?.toLowerCase());
@@ -184,21 +184,38 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
             >
                 <div className="flex flex-col gap-2">
                     {/* Pulsing Status Overlay */}
-                    <div className="bg-emerald-600/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border border-emerald-400/20 flex items-center justify-between">
+                    <div className={cn(
+                        "rounded-2xl p-4 shadow-2xl border flex items-center justify-between transition-colors duration-500",
+                        info.status === 'completed' 
+                            ? "bg-slate-900/95 border-white/10" 
+                            : "bg-emerald-600/95 border-emerald-400/20"
+                    )}>
                         <div className="flex flex-col">
                             <h2 className="text-white text-base font-black tracking-tight leading-tight">
-                                {displayStatus}
+                                {info.status === 'completed' ? "Mission Finalized" : displayStatus}
                             </h2>
                             <div className="flex items-center gap-2 mt-1">
-                                <span className="px-1.5 py-0.5 bg-white/10 rounded text-[9px] font-black text-emerald-100 uppercase tracking-widest">
-                                    Arriving in {etaText}
-                                </span>
-                                <div className="w-1 h-1 rounded-full bg-white/40" />
-                                <span className="text-[9px] font-black text-white/60 uppercase tracking-widest">On Time</span>
+                                {info.status === 'completed' ? (
+                                    <span className="text-[9px] font-black text-white/60 uppercase tracking-widest flex items-center gap-1">
+                                        <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                                        Thank you for your contribution
+                                    </span>
+                                ) : (
+                                    <>
+                                        <span className="px-1.5 py-0.5 bg-white/10 rounded text-[9px] font-black text-emerald-100 uppercase tracking-widest">
+                                            Arriving in {etaText}
+                                        </span>
+                                        <div className="w-1 h-1 rounded-full bg-white/40" />
+                                        <span className="text-[9px] font-black text-white/60 uppercase tracking-widest">On Time</span>
+                                    </>
+                                )}
                             </div>
                         </div>
-                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white cursor-pointer hover:bg-white/20 transition-colors">
-                            <Timer className="w-5 h-5 animate-pulse" />
+                        <div className={cn(
+                            "w-10 h-10 rounded-xl flex items-center justify-center text-white cursor-pointer transition-colors",
+                            info.status === 'completed' ? "bg-white/5" : "bg-white/10 hover:bg-white/20"
+                        )}>
+                            {info.status === 'completed' ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <Timer className="w-5 h-5 animate-pulse" />}
                         </div>
                     </div>
 
