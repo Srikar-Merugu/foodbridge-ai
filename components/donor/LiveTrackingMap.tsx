@@ -244,7 +244,7 @@ export default memo(function LiveTrackingMap({
         <div className="w-full h-full relative">
             {/* Signal Awareness HUD */}
             {signalLost && liveStatus !== 'completed' && (
-                <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[40] bg-rose-600/90 backdrop-blur-xl px-6 py-2.5 rounded-full border border-rose-500 shadow-2xl flex items-center space-x-3 animate-in slide-in-from-top-4 duration-500">
+                <div className="absolute top-32 left-1/2 -translate-x-1/2 z-[40] bg-rose-600/90 backdrop-blur-xl px-6 py-2.5 rounded-full border border-rose-500 shadow-2xl flex items-center space-x-3 animate-in slide-in-from-top-4 duration-500">
                     <div className="w-2 h-2 rounded-full bg-white animate-ping" />
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">NGO Signal Interrupted</span>
                 </div>
@@ -252,7 +252,7 @@ export default memo(function LiveTrackingMap({
 
             {/* API / Billing Error HUD (Phase 12) */}
             {directionsError && !signalLost && (
-                <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[35] bg-amber-500/90 backdrop-blur-xl px-6 py-2.5 rounded-full border border-white shadow-2xl flex items-center space-x-3 animate-in slide-in-from-top-4 duration-500">
+                <div className="absolute top-32 left-1/2 -translate-x-1/2 z-[35] bg-amber-500/90 backdrop-blur-xl px-6 py-2.5 rounded-full border border-white shadow-2xl flex items-center space-x-3 animate-in slide-in-from-top-4 duration-500">
                     <AlertCircle className="w-4 h-4 text-white" />
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">{directionsError} — Using Direct Line</span>
                 </div>
