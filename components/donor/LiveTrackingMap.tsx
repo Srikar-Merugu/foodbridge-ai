@@ -10,7 +10,7 @@
 import { useEffect, useState, useRef, useCallback, memo, useMemo } from "react";
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, OverlayView, Polyline } from "@react-google-maps/api";
 import { getSocket } from "@/lib/socket";
-import { Target } from "lucide-react";
+import { Target, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -65,6 +65,7 @@ export default memo(function LiveTrackingMap({
     const [rotation, setRotation] = useState(0);
     const [liveStatus, setLiveStatus] = useState(currentStatus?.toLowerCase() || "accepted");
     const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
+    const [directionsError, setDirectionsError] = useState<string | null>(null);
     const [shouldFollow, setShouldFollow] = useState(true);
 
     // ── Refs ──
@@ -126,8 +127,14 @@ export default memo(function LiveTrackingMap({
                     isNearby: (leg.distance?.value || 0) < 500
                 });
             }
-        } catch (error) {
+            setDirectionsError(null);
+        } catch (error: any) {
             console.error("[MAP] Directions Failed", error);
+            if (error?.status === "REQUEST_DENIED" || error?.code === "REQUEST_DENIED") {
+                setDirectionsError("Billing/API Key Restriction");
+            } else {
+                setDirectionsError("Route Calculation Delayed");
+            }
         }
     }, [isLoaded, currentTarget, onTrackingUpdate]);
 
@@ -243,6 +250,14 @@ export default memo(function LiveTrackingMap({
                 </div>
             )}
 
+            {/* API / Billing Error HUD (Phase 12) */}
+            {directionsError && !signalLost && (
+                <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[35] bg-amber-500/90 backdrop-blur-xl px-6 py-2.5 rounded-full border border-white shadow-2xl flex items-center space-x-3 animate-in slide-in-from-top-4 duration-500">
+                    <AlertCircle className="w-4 h-4 text-white" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">{directionsError} — Using Direct Line</span>
+                </div>
+            )}
+
             <GoogleMap
                 mapContainerStyle={mapContainerStyle}
                 zoom={16}
@@ -251,7 +266,7 @@ export default memo(function LiveTrackingMap({
                 onLoad={map => { mapRef.current = map; }}
             >
                 {/* 1. ROUTE LINES */}
-                {directionsResponse && directionsResponse.routes?.[0]?.overview_path && (
+                {directionsResponse && directionsResponse.routes?.[0]?.overview_path ? (
                     <>
                         {isPickupPhase ? (
                             <Polyline
@@ -285,6 +300,16 @@ export default memo(function LiveTrackingMap({
                             />
                         )}
                     </>
+                ) : ngoPos && (
+                    <Polyline 
+                        path={[ngoPos, currentTarget]} 
+                        options={{ 
+                            strokeColor: "#6366f1", 
+                            strokeOpacity: 0.4, 
+                            strokeWeight: 4, 
+                            lineDashRules: [{ repeat: "10px" }] 
+                        } as any} 
+                    />
                 )}
 
                 {/* 2. TARGET MARKER (Pickup/Destination) */}

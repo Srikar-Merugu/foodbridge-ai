@@ -117,7 +117,14 @@ export const LiveActivityFeed = () => {
                                 </div>
                                 <div className="flex flex-col items-end space-y-1">
                                     <span className="text-[9px] font-bold text-slate-500 whitespace-nowrap">
-                                        {formatDistanceToNow(new Date(activity.timestamp))} ago
+                                        {(() => {
+                                            try {
+                                                const date = new Date(activity.timestamp);
+                                                return isNaN(date.getTime()) ? 'just now' : formatDistanceToNow(date) + ' ago';
+                                            } catch (e) {
+                                                return 'just now';
+                                            }
+                                        })()}
                                     </span>
                                     <div className={cn(
                                         "w-1.5 h-1.5 rounded-full",

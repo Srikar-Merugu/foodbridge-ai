@@ -96,15 +96,18 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
             // --- Fallback to Nominatim (OpenStreetMap) ---
             try {
                 const res = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+                    { headers: { 'Accept-Language': 'en' } }
                 );
+                if (!res.ok) throw new Error("OSM Fallback Failed");
                 const data = await res.json();
                 
                 if (data && data.display_name) {
+                    const addr = data.address;
                     const formattedAddress = data.display_name;
-                    const city = data.address?.city || data.address?.town || data.address?.village || data.address?.suburb || "Unknown City";
-                    const state = data.address?.state || "Unknown State";
-                    const pincode = data.address?.postcode || "000000";
+                    const city = addr?.city || addr?.town || addr?.village || addr?.suburb || addr?.county || "Unknown City";
+                    const state = addr?.state || "Unknown State";
+                    const pincode = addr?.postcode || "000000";
 
                     setAddress(formattedAddress);
                     onLocationSelect({ 
