@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState, useRef, useCallback, memo, useMemo } from "react";
-import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, OverlayView, Polyline } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, OverlayView } from "@react-google-maps/api";
 import { getSocket } from "@/lib/socket";
 import { Target, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -169,7 +169,7 @@ export default memo(function LiveTrackingMap({
                 const bounds = new google.maps.LatLngBounds();
                 bounds.extend(currentTarget);
                 bounds.extend(currentPos);
-                mapRef.current.fitBounds(bounds, { top: 120, bottom: 200, left: 60, right: 60 });
+                mapRef.current.fitBounds(bounds, { top: 100, bottom: 200, left: 50, right: 50 });
             }
 
             if (progress < 1) animationFrameRef.current = requestAnimationFrame(animate);
@@ -265,50 +265,18 @@ export default memo(function LiveTrackingMap({
                 options={{ disableDefaultUI: true, styles: ZOMATO_MAP_STYLE }}
                 onLoad={map => { mapRef.current = map; }}
             >
-                {/* 1. ROUTE LINES */}
-                {directionsResponse && directionsResponse.routes?.[0]?.overview_path ? (
-                    <>
-                        {isPickupPhase ? (
-                            <Polyline
-                                path={directionsResponse.routes[0].overview_path}
-                                options={{
-                                    strokeColor: '#94a3b8',
-                                    strokeOpacity: 0,
-                                    icons: [{
-                                        icon: {
-                                            path: 'M 0,-1 0,1',
-                                            strokeOpacity: 1,
-                                            scale: 3,
-                                            strokeWeight: 4
-                                        },
-                                        offset: '0',
-                                        repeat: '20px'
-                                    }]
-                                }}
-                            />
-                        ) : (
-                            <DirectionsRenderer
-                                directions={directionsResponse}
-                                options={{
-                                    suppressMarkers: true,
-                                    polylineOptions: { 
-                                        strokeColor: '#10b981',
-                                        strokeWeight: 6,
-                                        strokeOpacity: 0.8
-                                    }
-                                }}
-                            />
-                        )}
-                    </>
-                ) : ngoPos && (
-                    <Polyline 
-                        path={[ngoPos, currentTarget]} 
-                        options={{ 
-                            strokeColor: "#6366f1", 
-                            strokeOpacity: 0.4, 
-                            strokeWeight: 4, 
-                            lineDashRules: [{ repeat: "10px" }] 
-                        } as any} 
+                {/* 1. ROUTE LINES (DirectionsRenderer Only) */}
+                {directionsResponse && (
+                    <DirectionsRenderer
+                        directions={directionsResponse}
+                        options={{
+                            suppressMarkers: true,
+                            polylineOptions: { 
+                                strokeColor: '#4F46E5', // Indigo-600
+                                strokeWeight: 6,
+                                strokeOpacity: 0.9
+                            }
+                        }}
                     />
                 )}
 
