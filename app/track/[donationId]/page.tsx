@@ -33,14 +33,12 @@ export default function TrackDonationPage() {
     const router = useRouter();
     useSession();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [initialData, setInitialData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [trackingStats, setTrackingStats] = useState({ distance: "", duration: "", isNearby: false });
     const [currentStatus, setCurrentStatus] = useState<string>("accepted");
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-    const [isChatOpen, setIsChatOpen] = useState(false);
-    const [isHelpOpen, setIsHelpOpen] = useState(false);
 
     const donationId = (params?.donationId as string) || "";
 

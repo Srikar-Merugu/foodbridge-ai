@@ -67,10 +67,8 @@ function CompleteProfileContent() {
     const [isActivated, setIsActivated] = React.useState(false);
     const [error, setError] = React.useState("");
 
-    if (!searchParams) return null;
-
     React.useEffect(() => {
-        if (session === undefined) return;
+        if (!searchParams || session === undefined) return;
 
         if (session?.user) {
             if (session.user.isProfileComplete) {
@@ -88,7 +86,9 @@ function CompleteProfileContent() {
                 role: queryRole === "ngo" ? "ngo" : (session.user.role || prev.role)
             }));
         }
-    }, [session, router, queryRole]);
+    }, [session, router, queryRole, searchParams]);
+
+    if (!searchParams) return null;
 
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: string) => {

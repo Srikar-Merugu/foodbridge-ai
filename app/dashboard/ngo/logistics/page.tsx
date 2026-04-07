@@ -39,25 +39,22 @@ function LogisticsDashboardContent() {
 
     const deliveryId = searchParams?.get("deliveryId");
     const donationId = searchParams?.get("donationId");
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     
-    if (!searchParams) return null;
-
     useEffect(() => {
-        if (deliveryId || donationId) {
-            getRequest("/api/donations/my-deliveries")
-                .then(res => {
-                    if (res.success) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const target = res.data.find((d: any) =>
-                            (deliveryId && d._id === deliveryId) ||
-                            (donationId && (d.donationId?._id === donationId || d.donationId === donationId))
-                        );
-                        if (target) setDeliveryDetails(target);
-                    }
-                }).catch(() => { });
-        }
-    }, [deliveryId, donationId]);
+        if (!searchParams || (!deliveryId && !donationId)) return;
+        
+        getRequest("/api/donations/my-deliveries")
+            .then(res => {
+                if (res.success) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const target = res.data.find((d: any) =>
+                        (deliveryId && d._id === deliveryId) ||
+                        (donationId && (d.donationId?._id === donationId || d.donationId === donationId))
+                    );
+                    if (target) setDeliveryDetails(target);
+                }
+            }).catch(() => { });
+    }, [deliveryId, donationId, searchParams]);
 
     const fetchStats = async () => {
         try {
@@ -98,6 +95,8 @@ function LogisticsDashboardContent() {
             socket.off("operational-update", handleSync);
         };
     }, []);
+
+    if (!searchParams) return null;
 
     return (
         <ProtectedRoute allowedRoles={["ngo"]}>

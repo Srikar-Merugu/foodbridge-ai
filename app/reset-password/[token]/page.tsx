@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
             })
             .catch(() => setTokenInvalid(true))
             .finally(() => setTokenValidating(false));
-    }, [token]);
+    }, [token, params]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

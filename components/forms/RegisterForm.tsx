@@ -71,13 +71,10 @@ export const RegisterForm = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
-  if (!searchParams) return null;
-
   useEffect(() => {
-    if (queryRole === "ngo" || queryRole === "donor") {
-      setFormData(prev => ({ ...prev, role: queryRole }));
-    }
-  }, [queryRole]);
+    if (!searchParams || (queryRole !== "ngo" && queryRole !== "donor")) return;
+    setFormData(prev => ({ ...prev, role: queryRole }));
+  }, [queryRole, searchParams]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -88,6 +85,8 @@ export const RegisterForm = () => {
     }
     return () => clearInterval(timer);
   }, [resendTimer]);
+
+  if (!searchParams) return null;
 
   const handleLocationSelect = (loc: { lat: number; lng: number; address: string; city?: string; state?: string; pincode?: string }) => {
     setFormData(prev => ({
