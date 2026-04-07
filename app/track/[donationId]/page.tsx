@@ -11,7 +11,7 @@ import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, ArrowLeft, Phone, MapPin, Clock, ShieldCheck, Navigation, AlertCircle, WifiOff } from "lucide-react";
+import { Loader2, ArrowLeft, Phone, MapPin, Clock, ShieldCheck, Navigation, AlertCircle } from "lucide-react";
 import { getRequest } from "@/lib/apiClient";
 import { getSocket } from "@/lib/socket";
 import NGOStatusTimeline from "@/components/donor/NGOStatusTimeline";

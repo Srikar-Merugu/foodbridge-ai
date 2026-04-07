@@ -391,7 +391,7 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
                 isOpen={isHelpOpen} 
                 onClose={() => setIsHelpOpen(false)} 
                 donationId={donationId}
-                donorId={(session?.user as any)?.id || info.donation?.donorId || ""}
+                donorId={info?.donation?.donorId || ""}
             />
 
         </div>

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, CheckCircle2, ChevronRight, MessageSquare, Clock, MapPin, Ban, Headphones } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface OrderHelpModalProps {
   isOpen: boolean;
@@ -88,7 +87,7 @@ export const OrderHelpModal = ({ isOpen, onClose, donationId, donorId }: OrderHe
                     <CheckCircle2 className="w-10 h-10 text-emerald-500 animate-in zoom-in duration-500" />
                   </div>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">Request Logged</h3>
-                  <p className="text-slate-500 text-sm mt-2 font-medium max-w-[240px]">We've received your issue report. Our support team will reach out shortly.</p>
+                  <p className="text-slate-500 text-sm mt-2 font-medium max-w-[240px]">We&apos;ve received your issue report. Our support team will reach out shortly.</p>
                 </div>
               ) : (
                 <>
@@ -129,7 +128,7 @@ export const OrderHelpModal = ({ isOpen, onClose, donationId, donorId }: OrderHe
                         </div>
                         
                         <div className="space-y-2">
-                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Describe what's happening</label>
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Describe what&apos;s happening</label>
                             <textarea 
                               value={description}
                               onChange={(e) => setDescription(e.target.value)}

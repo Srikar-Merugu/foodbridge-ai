@@ -24,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     return res.status(201).json({ success: true, message: 'Support ticket created successfully', data: ticket });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
+    } catch (err: unknown) {
+        return res.status(500).json({ success: false, message: (err as Error).message });
+    }
 }

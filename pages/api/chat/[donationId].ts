@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .limit(100);
 
     return res.status(200).json({ success: true, count: messages.length, data: messages });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+  } catch (err: unknown) {
+    return res.status(500).json({ success: false, message: (err as Error).message });
   }
 }

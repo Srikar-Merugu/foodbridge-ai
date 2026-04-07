@@ -23,7 +23,7 @@ interface LiveTrackingMapProps {
     currentStatus?: string;
     destinationLocation?: { lat: number; lng: number };
     initialNgoLocation?: { lat: number; lng: number };
-    onTrackingUpdate?: (data: { distance: string; duration: string; isNearby: boolean }) => void;
+    onTrackingUpdate?: (stats: { distance: string; duration: string; isNearby: boolean }) => void;
     onStatusChange?: (status: string) => void;
 }
 

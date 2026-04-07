@@ -5,7 +5,23 @@ import { useParams } from "next/navigation";
 import { Truck, MapPin, Package, AlertTriangle, ShieldCheck, Timer } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+
+interface PublicTrackingData {
+    status: string;
+    etaMinutes: number | null;
+    ngoLocation: { lat: number; lng: number } | null;
+    donation: {
+        foodType: string;
+        quantity: string;
+        city: string;
+        latitude: number;
+        longitude: number;
+    };
+    ngo: {
+        name: string;
+        rating: string;
+    } | null;
+}
 
 const LiveTrackingMap = dynamic(() => import("@/components/donor/LiveTrackingMap"), {
     ssr: false,
@@ -15,7 +31,7 @@ const LiveTrackingMap = dynamic(() => import("@/components/donor/LiveTrackingMap
 export default function PublicTrackingPage() {
     const params = useParams();
     const donationId = params.id as string;
-    const [info, setInfo] = useState<any>(null);
+    const [info, setInfo] = useState<PublicTrackingData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [trackingStats, setTrackingStats] = useState({ distance: "", duration: "", isNearby: false });
@@ -25,11 +41,11 @@ export default function PublicTrackingPage() {
             const res = await fetch(`/api/donations/track-public/${donationId}`);
             const result = await res.json();
             if (result.success) {
-                setInfo(result.data);
+                setInfo(result.data as PublicTrackingData);
             } else {
                 setError(result.message);
             }
-        } catch (err) {
+        } catch (err: unknown) {
             setError("Failed to load tracking data");
         } finally {
             setLoading(false);
@@ -123,7 +139,7 @@ export default function PublicTrackingPage() {
                         pickupLat={info.donation?.latitude || 0}
                         pickupLon={info.donation?.longitude || 0}
                         currentStatus={info.status}
-                        initialNgoLocation={info.ngoLocation}
+                        initialNgoLocation={info.ngoLocation ?? undefined}
                         onTrackingUpdate={(stats) => setTrackingStats(stats)}
                     />
                 </div>
