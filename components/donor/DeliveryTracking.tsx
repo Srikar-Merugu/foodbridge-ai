@@ -25,7 +25,6 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { ChatModal } from "../ChatModal";
 import { OrderHelpModal } from "../OrderHelpModal";
-import { useSession } from "next-auth/react";
 
 const LiveTrackingMap = dynamic(() => import("./LiveTrackingMap"), {
     ssr: false,
