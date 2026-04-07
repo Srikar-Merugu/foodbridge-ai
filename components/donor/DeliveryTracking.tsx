@@ -67,6 +67,7 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
     const [trackingStats, setTrackingStats] = useState({ distance: "", duration: "", isNearby: false });
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [isOffline, setIsOffline] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
 
     const fetchTracking = useCallback(async () => {
         try {
@@ -110,6 +111,36 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
         setInfo(prev => prev ? ({ ...prev, status: newStatus.toLowerCase() as TrackingInfo['status'] }) : null);
         setLastUpdated(new Date());
     }, []);
+
+    const handleShare = async () => {
+        const shareData = {
+            title: 'Track my FoodBridge Delivery',
+            text: `NGO ${info?.ngo?.name} is on the way with my food donation!`,
+            url: window.location.href,
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                await navigator.clipboard.writeText(window.location.href);
+                setIsSharing(true);
+                setTimeout(() => setIsSharing(false), 2000);
+            }
+        } catch (err) {
+            console.error("Share failed", err);
+        }
+    };
+
+    const handleSupport = () => {
+        window.alert("FoodBridge Support: For urgent mission issues, please call our emergency dispatcher at +91 000-000-0000. Quote Mission ID: " + donationId);
+    };
+
+    const handleMessage = () => {
+        if (!info?.ngo?.phone) return;
+        const message = encodeURIComponent(`Hi ${info.ngo.name}, I am tracking the donation (ID: ${donationId}). Any update on the pickup?`);
+        window.open(`https://wa.me/${info.ngo.phone}?text=${message}`, '_blank');
+    };
 
     if (loading) return (
         <div className="flex flex-col items-center justify-center h-[700px] bg-slate-950 rounded-[2.5rem] border border-white/5 overflow-hidden">
@@ -257,7 +288,10 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
                              <a href={`tel:${info.ngo?.phone}`} className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
                                 <Phone className="w-5 h-5" />
                              </a>
-                             <button className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all">
+                              <button 
+                                onClick={handleMessage}
+                                className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all active:scale-95"
+                             >
                                 <MessageCircle className="w-5 h-5" />
                              </button>
                         </div>
@@ -303,11 +337,20 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
 
                                     {/* Action Buttons */}
                                     <div className="grid grid-cols-2 gap-3 pt-2">
-                                        <button className="h-14 bg-slate-900 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 active:scale-95 transition-all">
+                                        <button 
+                                            onClick={handleSupport}
+                                            className="h-14 bg-slate-900 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 active:scale-95 transition-all"
+                                        >
                                             Order Help
                                         </button>
-                                        <button className="h-14 bg-indigo-600 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-600/20 active:scale-95 transition-all">
-                                            Share Tracking
+                                        <button 
+                                            onClick={handleShare}
+                                            className={cn(
+                                                "h-14 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all",
+                                                isSharing ? "bg-emerald-500 shadow-emerald-500/20" : "bg-indigo-600 shadow-indigo-600/20"
+                                            )}
+                                        >
+                                            {isSharing ? "Link Copied!" : "Share Tracking"}
                                         </button>
                                     </div>
                                 </motion.div>
