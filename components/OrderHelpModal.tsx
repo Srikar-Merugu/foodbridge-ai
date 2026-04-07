@@ -105,17 +105,19 @@ export const OrderHelpModal = ({ isOpen, onClose, donationId, donorId }: OrderHe
                         <button
                           key={opt.id}
                           onClick={() => setSelectedIssue(opt.id)}
-                          className="w-full bg-slate-50 hover:bg-slate-900 border border-slate-200 hover:border-slate-900 p-4 rounded-2xl flex items-center justify-between transition-all duration-200 active:scale-[0.98] group"
+                          className="w-full p-4 rounded-2xl flex items-center justify-between transition-all duration-200 active:scale-[0.98] bg-slate-50 hover:bg-slate-900 border border-slate-200 hover:border-slate-900 group"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white group-hover:bg-white/10 rounded-xl flex items-center justify-center text-slate-600 group-hover:text-white transition-colors duration-200 border border-slate-100 group-hover:border-transparent">
+                            {/* Icon box — always shows icon, flips on hover */}
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 bg-white border-slate-200 text-slate-600 group-hover:bg-white/10 group-hover:border-transparent group-hover:text-white transition-all duration-200">
                               {opt.icon}
                             </div>
-                            <span className="text-sm font-bold text-slate-900 group-hover:text-white transition-colors duration-200">
+                            {/* Label — ALWAYS dark, flips white on hover */}
+                            <span className="text-sm font-bold text-slate-800 group-hover:text-white transition-colors duration-200 text-left">
                               {opt.label}
                             </span>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-white/60 transition-colors duration-200" />
+                          <ChevronRight className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-white/60 transition-colors duration-200" />
                         </button>
                       ))}
                     </div>
