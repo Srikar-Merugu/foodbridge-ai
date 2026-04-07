@@ -10,7 +10,7 @@ import { useEffect } from "react";
 
 export default function ResetPasswordPage() {
     const params = useParams();
-    const token = typeof params.token === 'string' ? params.token : Array.isArray(params.token) ? params.token[0] : "";
+    const token = params && typeof params.token === 'string' ? params.token : (params && Array.isArray(params.token) ? params.token[0] : "");
     const router = useRouter();
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -58,8 +58,8 @@ export default function ResetPasswordPage() {
                 setTimeout(() => router.push("/login"), 3000);
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message || "Failed to reset password");
+        } catch (err: unknown) {
+            setError((err as Error).message || "Failed to reset password");
         } finally {
             setLoading(false);
         }
