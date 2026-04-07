@@ -381,7 +381,7 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
                 isOpen={isChatOpen} 
                 onClose={() => setIsChatOpen(false)} 
                 donationId={donationId} 
-                ngoName={info.ngo?.name || "Partner NGO"} 
+                partnerName={info.ngo?.name || "Partner NGO"} 
                 role="donor"
             />
 
