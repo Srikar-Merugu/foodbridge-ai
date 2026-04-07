@@ -7,11 +7,11 @@
  * 3. Real-time Status & ETA Hubs
  */
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, ArrowLeft, Phone, MapPin, Clock, ShieldCheck, ChevronUp, Navigation, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Phone, MapPin, Clock, ShieldCheck, Navigation, AlertCircle } from "lucide-react";
 import { getRequest } from "@/lib/apiClient";
 import NGOStatusTimeline from "@/components/donor/NGOStatusTimeline";
 import FeedbackModal from "@/components/donor/FeedbackModal";
@@ -29,17 +29,18 @@ const LiveTrackingMap = dynamic(() => import("@/components/donor/LiveTrackingMap
 
 export default function TrackDonationPage() {
     const { donationId } = useParams() as { donationId: string };
-    const { data: session } = useSession();
+    useSession();
     const router = useRouter();
 
     // -- State --
     const [loading, setLoading] = useState(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [initialData, setInitialData] = useState<any>(null);
     const [trackingStats, setTrackingStats] = useState({ distance: "...", duration: "...", isNearby: false });
     const [currentStatus, setCurrentStatus] = useState<string>("accepted");
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
-    const handleTrackingUpdate = useCallback((stats: any) => setTrackingStats(stats), []);
+    const handleTrackingUpdate = useCallback((stats: { distance: string; duration: string; isNearby: boolean }) => setTrackingStats(stats), []);
     const handleStatusChange = useCallback((s: string) => setCurrentStatus(s.toLowerCase()), []);
 
     // ── Phase 5: Initial Sync (API First) ───────────────────────────
@@ -110,8 +111,6 @@ export default function TrackDonationPage() {
                     pickupLat={donation.latitude}
                     pickupLon={donation.longitude}
                     currentStatus={currentStatus}
-                    ngoName={ngo?.name}
-                    destinationAddress={donation.pickupAddress}
                     initialNgoLocation={initialData.ngoLocation ? { lat: initialData.ngoLocation.lat, lng: initialData.ngoLocation.lng } : undefined}
                     onTrackingUpdate={handleTrackingUpdate}
                     onStatusChange={handleStatusChange}

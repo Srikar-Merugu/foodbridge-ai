@@ -2,7 +2,6 @@ import { authMiddleware } from '@/middleware/authMiddleware';
 import dbConnect from '@/lib/db';
 import Donation from '@/models/Donation';
 import Delivery from '@/models/Delivery';
-import HungerSpot from '@/models/HungerSpot';
 import NGOProfile from '@/models/NGOProfile';
 import { successResponse, errorResponse } from '@/lib/apiResponse';
 import { asyncHandler } from '@/utils/asyncHandler';
@@ -35,7 +34,7 @@ export const GET = asyncHandler(async (req: Request, { params }: { params: { id:
     // 3. NGO Profile for contact details
     let ngoProfile = null;
     if (delivery?.ngoId) {
-        const ngoUserId = (delivery.ngoId as any)._id || delivery.ngoId;
+        const ngoUserId = (delivery.ngoId as { _id: string })._id || delivery.ngoId;
         ngoProfile = await NGOProfile.findOne({ userId: ngoUserId });
     }
 
@@ -57,8 +56,8 @@ export const GET = asyncHandler(async (req: Request, { params }: { params: { id:
         } else if (isInTransit) {
             if (delivery?.hungerSpotId) {
                 targetPos = { 
-                    lat: (delivery.hungerSpotId as any).lat, 
-                    lng: (delivery.hungerSpotId as any).lng 
+                    lat: (delivery.hungerSpotId as unknown as { lat: number }).lat, 
+                    lng: (delivery.hungerSpotId as unknown as { lng: number }).lng 
                 };
             } else {
                 // Fallback: If no hunger spot, simulate a destination 3km away
@@ -96,11 +95,11 @@ export const GET = asyncHandler(async (req: Request, { params }: { params: { id:
             city: donation.city,
             latitude: donation.latitude,
             longitude: donation.longitude,
-            donorName: (donation.donorId as any)?.name || 'Donor'
+            donorName: (donation.donorId as unknown as { name: string })?.name || 'Donor'
         },
         ngo: delivery?.ngoId ? {
-            name: (delivery.ngoId as any).name,
-            email: (delivery.ngoId as any).email,
+            name: (delivery.ngoId as unknown as { name: string }).name,
+            email: (delivery.ngoId as unknown as { email: string }).email,
             phone: ngoProfile?.contactPhone || '—',
             rating: ngoProfile ? (ngoProfile.trustScore / 20).toFixed(1) : "4.8",
             image: null

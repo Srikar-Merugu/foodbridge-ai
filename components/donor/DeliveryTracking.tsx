@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
-import { getRequest, postRequest } from "@/lib/apiClient";
+import { useEffect, useState, useCallback } from "react";
+import { getRequest } from "@/lib/apiClient";
 import { getSocket } from "@/lib/socket";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -68,7 +68,7 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [isOffline, setIsOffline] = useState(false);
 
-    const fetchTracking = async () => {
+    const fetchTracking = useCallback(async () => {
         try {
             const result = await getRequest(`/api/donations/track/${donationId}`);
             if (result.success) {
@@ -77,18 +77,18 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
             } else {
                 setError(result.message);
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to load tracking");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Failed to load tracking");
         } finally {
             setLoading(false);
         }
-    };
+    }, [donationId]);
 
     useEffect(() => {
         fetchTracking();
         const poll = setInterval(fetchTracking, 10000);
         return () => clearInterval(poll);
-    }, [donationId]);
+    }, [fetchTracking]);
 
     // Signal Monitor
     useEffect(() => {
@@ -101,13 +101,13 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
         return () => clearInterval(check);
     }, [lastUpdated]);
 
-    const handleTrackingUpdate = useCallback((stats: any) => {
+    const handleTrackingUpdate = useCallback((stats: { distance: string; duration: string; isNearby: boolean }) => {
         setTrackingStats(stats);
         setLastUpdated(new Date());
     }, []);
 
     const handleStatusChange = useCallback((newStatus: string) => {
-        setInfo(prev => prev ? ({ ...prev, status: newStatus.toLowerCase() as any }) : null);
+        setInfo(prev => prev ? ({ ...prev, status: newStatus.toLowerCase() as TrackingInfo['status'] }) : null);
         setLastUpdated(new Date());
     }, []);
 
@@ -193,7 +193,6 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
                     pickupLat={info.donation?.latitude || 0}
                     pickupLon={info.donation?.longitude || 0}
                     currentStatus={info.status}
-                    ngoName={info.ngo?.name}
                     initialNgoLocation={info.ngoLocation}
                     onTrackingUpdate={handleTrackingUpdate}
                     onStatusChange={handleStatusChange}

@@ -10,9 +10,8 @@
 import { useEffect, useState, useRef, useCallback, memo, useMemo } from "react";
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, OverlayView, Polyline } from "@react-google-maps/api";
 import { getSocket } from "@/lib/socket";
-import { Loader2, Target, Crosshair, MapPin, WifiOff, Zap } from "lucide-react";
+import { Target } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getRequest } from "@/lib/apiClient";
 import Image from "next/image";
 
 const MAPS_LIBRARIES: ("places")[] = ["places"];
@@ -22,12 +21,10 @@ interface LiveTrackingMapProps {
     pickupLat: number;
     pickupLon: number;
     currentStatus?: string;
-    ngoName?: string;
     destinationLocation?: { lat: number; lng: number };
     initialNgoLocation?: { lat: number; lng: number };
     onTrackingUpdate?: (data: { distance: string; duration: string; isNearby: boolean }) => void;
     onStatusChange?: (status: string) => void;
-    onReconnect?: () => void;
 }
 
 const mapContainerStyle = { width: "100%", height: "100%" };
@@ -50,12 +47,10 @@ export default memo(function LiveTrackingMap({
     pickupLat,
     pickupLon,
     currentStatus,
-    ngoName,
     destinationLocation,
     initialNgoLocation,
     onTrackingUpdate,
     onStatusChange,
-    onReconnect,
 }: LiveTrackingMapProps) {
 
     const { isLoaded, loadError } = useJsApiLoader({
@@ -68,7 +63,6 @@ export default memo(function LiveTrackingMap({
     const [ngoPos, setNgoPos] = useState<{ lat: number, lng: number } | null>(null);
     const [interpolatedPos, setInterpolatedPos] = useState<{ lat: number, lng: number } | null>(null);
     const [rotation, setRotation] = useState(0);
-    const [isSignalDropped, setIsSignalDropped] = useState(false);
     const [liveStatus, setLiveStatus] = useState(currentStatus?.toLowerCase() || "accepted");
     const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
     const [shouldFollow, setShouldFollow] = useState(true);
@@ -171,10 +165,9 @@ export default memo(function LiveTrackingMap({
         if (!donationId) return;
         const socket = getSocket();
 
-        const syncLocation = (data: any) => {
+        const syncLocation = (data: { donationId: string; lat: number; lng: number }) => {
             if (data.donationId !== donationId) return;
             lastLocationTimestamp.current = Date.now();
-            setIsSignalDropped(false);
             const newPos = { lat: data.lat, lng: data.lng };
             setNgoPos(newPos);
             if (!ngoPosRef.current) {
@@ -186,7 +179,7 @@ export default memo(function LiveTrackingMap({
             updateRoute(newPos);
         };
 
-        const syncStatus = (data: any) => {
+        const syncStatus = (data: { donationId: string; status: string }) => {
             if (data.donationId !== donationId) return;
             setLiveStatus(data.status.toLowerCase());
             onStatusChange?.(data.status);

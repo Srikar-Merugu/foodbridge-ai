@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Star, CheckCircle2, X, MessageSquare, ShieldCheck, Heart } from 'lucide-react';
+import { Star, X, MessageSquare, ShieldCheck, Heart } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { postRequest } from '@/lib/apiClient';
 
