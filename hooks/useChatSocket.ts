@@ -44,6 +44,7 @@ export const useChatSocket = (donationId: string, role: 'donor' | 'ngo') => {
     const onDisconnect = () => setIsConnected(false);
 
     const onChatMessage = (msg: Message) => {
+      console.log(`[CHAT-RECEIVE] Room: ${donationId} | Msg: ${msg.message}`);
       if (msg.donationId === donationId) {
         setMessages((prev) => [...prev, msg]);
       }

@@ -44,7 +44,7 @@ export const ChatModal = ({ isOpen, onClose, donationId, partnerName, role }: Ch
             initial={{ opacity: 0, y: 100, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.95 }}
-            className="fixed bottom-6 right-6 w-[calc(100%-3rem)] md:w-[400px] h-[600px] max-h-[80vh] bg-white rounded-[2.5rem] shadow-2xl z-[101] flex flex-col overflow-hidden border border-slate-100"
+            className="fixed bottom-6 right-6 w-[360px] md:w-[400px] h-[600px] max-h-[85vh] bg-white rounded-[2.5rem] shadow-2xl z-[1000] flex flex-col overflow-hidden border border-slate-100"
           >
             {/* Header */}
             <div className="bg-slate-900 p-6 flex items-center justify-between shrink-0">
