@@ -127,6 +127,31 @@ io.on("connection", (socket) => {
     socket.on("broadcast-activity", (activity) => {
         io.to("public-feed").emit("new-activity", activity);
     });
+    
+    // --- PHASE 3: Real-Time Chat ---
+    socket.on("chat:message", async (data) => {
+        const { donationId, sender, message, timestamp } = data;
+        if (!donationId || !sender || !message) return;
+
+        console.log(`[CHAT] Message in ${donationId}: ${sender} -> ${message.substring(0, 20)}...`);
+
+        // 1. Broadcast instantly to the mission room
+        io.to(donationId).emit("chat:message", data);
+
+        // 2. Persist to Database (Persistence Layer)
+        try {
+            await mongoose.connection.db.collection('chatmessages').insertOne({
+                donationId: new mongoose.Types.ObjectId(donationId),
+                sender,
+                message,
+                timestamp: new Date(timestamp || Date.now()),
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+        } catch (err) {
+            console.error(`[DB-ERROR] Failed to persist chat for ${donationId}:`, err.message);
+        }
+    });
 
     socket.on("disconnect", (reason) => {
         console.log(`[SOCKET] User disconnected: ${socket.id} (Reason: ${reason})`);

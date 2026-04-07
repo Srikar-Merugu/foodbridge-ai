@@ -23,6 +23,9 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { ChatModal } from "../ChatModal";
+import { OrderHelpModal } from "../OrderHelpModal";
+import { useSession } from "next-auth/react";
 
 const LiveTrackingMap = dynamic(() => import("./LiveTrackingMap"), {
     ssr: false,
@@ -55,6 +58,7 @@ interface TrackingInfo {
         latitude?: number;
         longitude?: number;
         donorName: string;
+        donorId: string;
     } | null;
     lastUpdated: string;
 }
@@ -68,6 +72,9 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [isOffline, setIsOffline] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const { data: session } = useSession();
 
     const fetchTracking = useCallback(async () => {
         try {
@@ -113,17 +120,18 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
     }, []);
 
     const handleShare = async () => {
+        const publicUrl = `${window.location.origin}/track/${donationId}`;
         const shareData = {
             title: 'Track my FoodBridge Delivery',
             text: `NGO ${info?.ngo?.name} is on the way with my food donation!`,
-            url: window.location.href,
+            url: publicUrl,
         };
 
         try {
             if (navigator.share) {
                 await navigator.share(shareData);
             } else {
-                await navigator.clipboard.writeText(window.location.href);
+                await navigator.clipboard.writeText(publicUrl);
                 setIsSharing(true);
                 setTimeout(() => setIsSharing(false), 2000);
             }
@@ -132,15 +140,8 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
         }
     };
 
-    const handleSupport = () => {
-        window.alert("FoodBridge Support: For urgent mission issues, please call our emergency dispatcher at +91 000-000-0000. Quote Mission ID: " + donationId);
-    };
-
-    const handleMessage = () => {
-        if (!info?.ngo?.phone) return;
-        const message = encodeURIComponent(`Hi ${info.ngo.name}, I am tracking the donation (ID: ${donationId}). Any update on the pickup?`);
-        window.open(`https://wa.me/${info.ngo.phone}?text=${message}`, '_blank');
-    };
+    const handleSupport = () => setIsHelpOpen(true);
+    const handleMessage = () => setIsChatOpen(true);
 
     if (loading) return (
         <div className="flex flex-col items-center justify-center h-[700px] bg-slate-950 rounded-[2.5rem] border border-white/5 overflow-hidden">
@@ -376,6 +377,22 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
                     </div>
                 </div>
             </motion.div>
+
+            {/* 4. MODALS */}
+            <ChatModal 
+                isOpen={isChatOpen} 
+                onClose={() => setIsChatOpen(false)} 
+                donationId={donationId} 
+                ngoName={info.ngo?.name || "Partner NGO"} 
+                role="donor"
+            />
+
+            <OrderHelpModal 
+                isOpen={isHelpOpen} 
+                onClose={() => setIsHelpOpen(false)} 
+                donationId={donationId}
+                donorId={(session?.user as any)?.id || info.donation?.donorId || ""}
+            />
 
         </div>
     );

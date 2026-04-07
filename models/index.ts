@@ -12,6 +12,8 @@ import Feedback from './Feedback';
 import Report from './Report';
 import SMSLog from './SMSLog';
 import Verification from './Verification';
+import ChatMessage from './ChatMessage';
+import SupportTicket from './SupportTicket';
 
 export {
     User,
@@ -27,5 +29,7 @@ export {
     Feedback,
     Report,
     SMSLog,
-    Verification
+    Verification,
+    ChatMessage,
+    SupportTicket
 };
