@@ -161,7 +161,7 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
             </div>
         </div>
     );
-
+    const stages = [
         { key: 'accepted', label: 'Preparing', desc: 'NGO assigned & localizing', icon: <Package /> },
         { key: 'on_the_way', label: 'Collecting', desc: 'Heading to your location', icon: <Truck /> },
         { key: 'collected', label: 'On the way', desc: 'Out for final delivery', icon: <Navigation /> },
