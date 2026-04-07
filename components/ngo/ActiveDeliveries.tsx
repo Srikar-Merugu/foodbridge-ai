@@ -40,6 +40,7 @@ export const ActiveDeliveries = ({ refreshKey = 0, variant = "light" }: { refres
 
     const handleOpenChat = (e: React.MouseEvent, donationId: string, donorName: string) => {
         e.stopPropagation();
+        console.log(`[NGO-CHAT] Opening link to Donation: ${donationId} | Partner: ${donorName}`);
         setActiveChat({ id: donationId, name: donorName });
         setIsChatOpen(true);
     };
