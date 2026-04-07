@@ -42,7 +42,7 @@ function CompleteProfileContent() {
     const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const queryRole = searchParams.get("role");
+    const queryRole = searchParams ? searchParams.get("role") : null;
 
 
 
@@ -164,8 +164,8 @@ function CompleteProfileContent() {
                 }, 1000);
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message || "Failed to update profile");
+        } catch (err: unknown) {
+            setError((err as Error).message || "Failed to update profile");
         } finally {
             setLoading(false);
         }

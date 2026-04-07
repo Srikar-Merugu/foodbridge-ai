@@ -128,9 +128,10 @@ export default memo(function LiveTrackingMap({
                 });
             }
             setDirectionsError(null);
-        } catch (error: any) {
-            console.error("[MAP] Directions Failed", error);
-            if (error?.status === "REQUEST_DENIED" || error?.code === "REQUEST_DENIED") {
+        } catch (error: unknown) {
+            console.error("[ROUTE-API] Routing Engine Critical Failure:", (error as Error).message);
+            const err = error as any;
+            if (err?.status === "REQUEST_DENIED" || err?.code === "REQUEST_DENIED") {
                 setDirectionsError("Billing/API Key Restriction");
             } else {
                 setDirectionsError("Route Calculation Delayed");

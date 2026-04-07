@@ -74,7 +74,6 @@ export const DeliveryTracking = ({ donationId }: { donationId: string }) => {
     const [isSharing, setIsSharing] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isHelpOpen, setIsHelpOpen] = useState(false);
-    const { data: session } = useSession();
 
     const fetchTracking = useCallback(async () => {
         try {
