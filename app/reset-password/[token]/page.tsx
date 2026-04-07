@@ -10,7 +10,9 @@ import { useEffect } from "react";
 
 export default function ResetPasswordPage() {
     const params = useParams();
-    const token = params && typeof params.token === 'string' ? params.token : (params && Array.isArray(params.token) ? params.token[0] : "");
+    if (!params) return null;
+
+    const token = typeof params.token === 'string' ? params.token : (Array.isArray(params.token) ? params.token[0] : "");
     const router = useRouter();
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");

@@ -29,7 +29,11 @@ const LiveTrackingMap = dynamic(() => import("@/components/donor/LiveTrackingMap
 });
 
 export default function TrackDonationPage() {
-    const { donationId } = useParams() as { donationId: string };
+    const params = useParams();
+    const donationId = (params?.donationId as string) || "";
+    
+    if (!params) return null;
+
     useSession();
     const router = useRouter();
 

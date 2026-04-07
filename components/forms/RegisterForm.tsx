@@ -31,6 +31,9 @@ import { LocationPicker } from "@/components/shared/LocationPicker";
 
 export const RegisterForm = () => {
   const searchParams = useSearchParams();
+  
+  if (!searchParams) return null;
+
   const router = useRouter();
   const queryRole = searchParams.get("role");
 

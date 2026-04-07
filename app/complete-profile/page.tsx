@@ -42,7 +42,9 @@ function CompleteProfileContent() {
     const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const queryRole = searchParams ? searchParams.get("role") : null;
+    if (!searchParams) return null;
+    
+    const queryRole = searchParams.get("role");
 
 
 

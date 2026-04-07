@@ -31,6 +31,10 @@ function LogisticsDashboardContent() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [stats, setStats] = useState<any>(null);
     const searchParams = useSearchParams();
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    
+    if (!searchParams) return null;
+
     const deliveryId = searchParams?.get("deliveryId");
     const donationId = searchParams?.get("donationId");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -30,7 +30,10 @@ const LiveTrackingMap = dynamic(() => import("@/components/donor/LiveTrackingMap
 
 export default function PublicTrackingPage() {
     const params = useParams();
-    const donationId = params.id as string;
+    const donationId = params?.id as string;
+    
+    if (!params) return null;
+
     const [info, setInfo] = useState<PublicTrackingData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
