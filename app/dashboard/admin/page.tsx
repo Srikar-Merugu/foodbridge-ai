@@ -19,14 +19,16 @@ import {
   RefreshCw,
   ArrowUpRight,
   Terminal,
-  Zap
+  Zap,
+  Headphones
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import AdminReportsPage from "./reports/page";
 import AdminVerificationsPage from "./verifications/page";
+import AdminSupportPage from "./support/page";
 
-type Tab = "overview" | "users" | "donations" | "reports" | "verifications";
+type Tab = "overview" | "users" | "donations" | "reports" | "verifications" | "support";
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>("overview");
@@ -89,6 +91,7 @@ export default function AdminDashboard() {
     { key: "donations", label: "Ledger", icon: Package },
     { key: "verifications", label: "Verification", icon: ShieldCheck },
     { key: "reports", label: "Trust & Safety", icon: AlertTriangle },
+    { key: "support", label: "Support", icon: Headphones },
   ];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -232,6 +235,12 @@ export default function AdminDashboard() {
             {tab === "verifications" && (
               <div className="bg-white border border-slate-200/60 rounded-2xl p-8 shadow-sm">
                 <AdminVerificationsPage />
+              </div>
+            )}
+
+            {tab === "support" && (
+              <div className="bg-white border border-slate-200/60 rounded-2xl p-8 shadow-sm">
+                <AdminSupportPage />
               </div>
             )}
           </div>
